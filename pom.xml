@@ -1,105 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.3</version>
-		<relativePath/> <!-- lookup parent from repository -->
-	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>TaxiService</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>TaxiService</name>
-	<description>TaxiService</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
-		<java.version>17</java.version>
-	</properties>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
-		</dependency>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+    <groupId>com.example</groupId>
+    <artifactId>taxiservice</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>taxiservice</name>
+    <description>Taxi Service Application</description>
 
+    <properties>
+        <java.version>17</java.version>
+        <jts.version>1.19.0</jts.version>
+        <hibernate.version>6.4.1.Final</hibernate.version>
+        <postgresql.version>42.7.1</postgresql.version>
+        <postgis-jdbc.version>2023.1.0</postgis-jdbc.version>
+        <jwt.version>0.11.5</jwt.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
+
+        <!-- Database -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
+
+        <!-- PostGIS JDBC Driver -->
+        <dependency>
+            <groupId>net.postgis</groupId>
+            <artifactId>postgis-jdbc</artifactId>
+            <version>${postgis-jdbc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.10.1</version>
+        </dependency>
+        <!-- Hibernate Spatial -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-spatial</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+
+        <!-- JTS Topology Suite -->
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>${jts.version}</version>
+        </dependency>
+
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Тестирование -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Dev Tools -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,10 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>$Title$</title>
+  <title>Вход в систему</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f5f5f5;
+      padding-top: 5rem;
+    }
+    .form-signin {
+      max-width: 330px;
+      padding: 15px;
+      margin: 0 auto;
+    }
+    .form-signin .form-floating:focus-within {
+      z-index: 2;
+    }
+    .form-signin input[type="email"] {
+      margin-bottom: -1px;
+      border-bottom-right-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    .form-signin input[type="password"] {
+      margin-bottom: 10px;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+  </style>
 </head>
-<body>
-$END$
+<body class="text-center">
+<main class="form-signin">
+  <form th:action="@{/login}" method="post">
+    <img class="mb-4" src="https://via.placeholder.com/72x72" alt="Лого" width="72" height="72">
+    <h1 class="h3 mb-3 fw-normal">Вход в систему</h1>
+
+    <div th:if="${param.error}" class="alert alert-danger">
+      Неверный email или пароль.
+    </div>
+
+    <div th:if="${param.logout}" class="alert alert-success">
+      Вы успешно вышли из системы.
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success">
+      <span th:text="${successMessage}"></span>
+    </div>
+
+    <div class="form-floating">
+      <input type="email" class="form-control" id="floatingInput" name="username" placeholder="Email" required>
+      <label for="floatingInput">Email</label>
+    </div>
+    <div class="form-floating">
+      <input type="password" class="form-control" id="floatingPassword" name="password" placeholder="Пароль" required>
+      <label for="floatingPassword">Пароль</label>
+    </div>
+
+    <button class="w-100 btn btn-lg btn-primary" type="submit">Войти</button>
+
+    <div class="mt-3">
+      <a th:href="@{/register/client}" class="btn btn-outline-secondary me-2">Зарегистрироваться как клиент</a>
+      <a th:href="@{/register/driver}" class="btn btn-outline-secondary">Зарегистрироваться как водитель</a>
+    </div>
+
+    <p class="mt-5 mb-3 text-muted">&copy; Taxi Service 2025</p>
+  </form>
+</main>
 </body>
 </html>
