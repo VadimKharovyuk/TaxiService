@@ -49,8 +49,8 @@ public class SecurityConfig {
                                 .requestMatchers("/login/**").permitAll()
                                 .requestMatchers("/api/car-brands/**").permitAll()
                                 .requestMatchers("/login", "/register/**").permitAll()
+                                .requestMatchers("/moderator/**", "/tickets/**").hasAnyRole("ADMIN", "MODERATOR")
                                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

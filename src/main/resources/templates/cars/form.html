@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${car.id == null ? 'Добавление автомобиля' : 'Редактирование автомобиля'}">Автомобиль</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Taxi Service</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto mb-2 mb-md-0">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">Главная</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" th:href="@{/cars}">Мои автомобили</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/driver/orders}">Заказы</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+        </li>
+      </ul>
+      <form class="d-flex" th:action="@{/logout}" method="post">
+        <span class="navbar-text me-3" sec:authentication="name"></span>
+        <button class="btn btn-outline-danger" type="submit">Выйти</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 th:text="${car.id == null ? 'Добавление нового автомобиля' : 'Редактирование автомобиля'}">Автомобиль</h3>
+        </div>
+        <div class="card-body">
+          <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+            <span th:text="${errorMessage}"></span>
+          </div>
+
+          <form th:action="${car.id == null ? '/cars/new' : '/cars/edit/' + car.id}" method="post" th:object="${car}">
+            <input type="hidden" th:field="*{id}" />
+
+            <div class="mb-3">
+              <label for="brandId" class="form-label">Марка автомобиля</label>
+              <select id="brandId" class="form-select" th:field="*{brandId}" required>
+                <option value="">-- Выберите марку --</option>
+                <option th:each="brand : ${brands}" th:value="${brand.id}" th:text="${brand.name}"></option>
+              </select>
+              <div class="text-danger" th:if="${#fields.hasErrors('brandId')}" th:errors="*{brandId}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="model" class="form-label">Модель</label>
+              <input type="text" class="form-control" id="model" th:field="*{model}" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('model')}" th:errors="*{model}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="year" class="form-label">Год выпуска</label>
+              <input type="number" class="form-control" id="year" th:field="*{year}" min="1950" th:max="${#dates.format(#dates.createNow(), 'yyyy')}" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('year')}" th:errors="*{year}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="licensePlate" class="form-label">Номерной знак</label>
+              <input type="text" class="form-control" id="licensePlate" th:field="*{licensePlate}" required>
+              <div class="text-danger" th:if="${#fields.hasErrors('licensePlate')}" th:errors="*{licensePlate}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="category" class="form-label">Категория</label>
+              <select id="category" class="form-select" th:field="*{category}" required>
+                <option value="">-- Выберите категорию --</option>
+                <option th:each="categoryOption : ${categories}" th:value="${categoryOption}" th:text="${categoryOption == T(com.example.taxiservice.enums.CarCategory).STANDARD ? 'Стандарт' : categoryOption == T(com.example.taxiservice.enums.CarCategory).BUSINESS ? 'Бизнес' : 'Люкс'}"></option>
+              </select>
+              <div class="text-danger" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="color" class="form-label">Цвет</label>
+              <input type="text" class="form-control" id="color" th:field="*{color}">
+              <div class="text-danger" th:if="${#fields.hasErrors('color')}" th:errors="*{color}"></div>
+            </div>
+
+            <div class="mb-3">
+              <label for="seats" class="form-label">Количество мест</label>
+              <input type="number" class="form-control" id="seats" th:field="*{seats}" min="1" max="50">
+              <div class="text-danger" th:if="${#fields.hasErrors('seats')}" th:errors="*{seats}"></div>
+            </div>
+
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="isAvailable" th:field="*{isAvailable}">
+              <label class="form-check-label" for="isAvailable">Автомобиль доступен для заказов</label>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Сохранить
+              </button>
+              <a th:href="@{/cars}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Отмена
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

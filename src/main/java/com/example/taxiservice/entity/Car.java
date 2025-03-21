@@ -26,6 +26,8 @@ public class Car {
     @JoinColumn(name = "brand_id", nullable = false)
     private CarBrand brand;
 
+    private String logoUrl;
+
     @Column(nullable = false)
     private String model;
 

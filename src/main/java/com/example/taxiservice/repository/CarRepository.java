@@ -4,7 +4,6 @@ import com.example.taxiservice.entity.Car;
 import com.example.taxiservice.entity.CarBrand;
 import com.example.taxiservice.entity.User;
 import com.example.taxiservice.enums.CarCategory;
-import org.locationtech.jts.geom.Point;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,22 +17,29 @@ public interface CarRepository extends JpaRepository<Car, Long> {
     List<Car> findByIsAvailableAndCategory(boolean isAvailable, CarCategory category);
     List<Car> findByBrand(CarBrand brand);
     List<Car> findByBrandAndIsAvailable(CarBrand brand, boolean isAvailable);
+    boolean existsByLicensePlate(String licensePlate);
 
     /**
      * Находит доступные автомобили в указанном радиусе от точки
-     * Использует нативный SQL запрос с пространственными функциями PostGIS
-     *
-     * @param point центральная точка поиска
-     * @param radius радиус поиска в метрах
-     * @return список доступных автомобилей в указанном радиусе
+     * Использует простой SQL для расчета расстояния между двумя точками
      */
-    @Query(value = "SELECT * FROM cars c WHERE c.is_available = true AND ST_DWithin(c.location, ?1, ?2)", nativeQuery = true)
-    List<Car> findAvailableCarsNearby(Point point, double radius);
+    @Query("SELECT c FROM Car c WHERE c.isAvailable = true " +
+            "AND (6371 * acos(cos(radians(:latitude)) * cos(radians(c.latitude)) * " +
+            "cos(radians(c.longitude) - radians(:longitude)) + sin(radians(:latitude)) * " +
+            "sin(radians(c.latitude)))) <= :radius")
+    List<Car> findAvailableCarsNearby(@Param("latitude") Double latitude,
+                                      @Param("longitude") Double longitude,
+                                      @Param("radius") Double radius);
 
     /**
-     * Альтернативный метод, использующий простое JPQL выражение вместо пространственной функции
-     * Может использоваться как временное решение, пока не настроена полная поддержка PostGIS
+     * Находит доступные автомобили указанной категории в радиусе от точки
      */
-    @Query("SELECT c FROM Car c WHERE c.isAvailable = true")
-    List<Car> findAllAvailableCars();
+    @Query("SELECT c FROM Car c WHERE c.isAvailable = true AND c.category = :category " +
+            "AND (6371 * acos(cos(radians(:latitude)) * cos(radians(c.latitude)) * " +
+            "cos(radians(c.longitude) - radians(:longitude)) + sin(radians(:latitude)) * " +
+            "sin(radians(c.latitude)))) <= :radius")
+    List<Car> findAvailableCarsNearbyByCategory(@Param("latitude") Double latitude,
+                                                @Param("longitude") Double longitude,
+                                                @Param("radius") Double radius,
+                                                @Param("category") CarCategory category);
 }

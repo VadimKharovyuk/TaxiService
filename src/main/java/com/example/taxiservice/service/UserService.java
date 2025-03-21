@@ -4,10 +4,13 @@ import com.example.taxiservice.entity.User;
 import com.example.taxiservice.enums.Role;
 import com.example.taxiservice.exception.ResourceNotFoundException;
 import com.example.taxiservice.repository.UserRepository;
+import com.example.taxiservice.util.ImgurService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -16,6 +19,7 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ImgurService imgurService;
 
     public User findById(Long id) {
         return userRepository.findById(id)
@@ -52,9 +56,49 @@ public class UserService {
         // Обновляем только разрешенные поля
         existingUser.setName(user.getName());
         existingUser.setAge(user.getAge());
-        existingUser.setPhoto(user.getPhoto());
+
+        // Фото обновляется отдельным методом
 
         return userRepository.save(existingUser);
+    }
+
+    /**
+     * Загружает фото профиля пользователя в облако Imgur
+     */
+    @Transactional
+    public User updateProfilePhoto(Long userId, MultipartFile photo) throws IOException {
+        User user = findById(userId);
+
+        // Если у пользователя есть старое фото, удаляем его
+        if (user.getPhoto() != null && user.getPhotoDeleteHash() != null) {
+            imgurService.deleteImage(user.getPhotoDeleteHash());
+        }
+
+        // Загружаем фото в Imgur
+        ImgurService.UploadResult result = imgurService.uploadImage(photo);
+
+        // Обновляем URL фото и deleteHash пользователя
+        user.setPhoto(result.getUrl());
+        user.setPhotoDeleteHash(result.getDeleteHash());
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Удаляет фото профиля пользователя
+     */
+    @Transactional
+    public User removeProfilePhoto(Long userId) {
+        User user = findById(userId);
+
+        // Если у пользователя есть фото, удаляем его
+        if (user.getPhoto() != null && user.getPhotoDeleteHash() != null) {
+            imgurService.deleteImage(user.getPhotoDeleteHash());
+            user.setPhoto(null);
+            user.setPhotoDeleteHash(null);
+        }
+
+        return userRepository.save(user);
     }
 
     @Transactional
@@ -79,6 +123,12 @@ public class UserService {
     @Transactional
     public void delete(Long userId) {
         User user = findById(userId);
+
+        // Удаляем фото пользователя перед удалением самого пользователя
+        if (user.getPhoto() != null && user.getPhotoDeleteHash() != null) {
+            imgurService.deleteImage(user.getPhotoDeleteHash());
+        }
+
         userRepository.delete(user);
     }
 

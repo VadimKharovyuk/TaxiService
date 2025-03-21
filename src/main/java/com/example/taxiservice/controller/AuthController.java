@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-
 @Controller
 @RequiredArgsConstructor
 public class AuthController {
@@ -26,39 +25,42 @@ public class AuthController {
 
     @GetMapping("/login")
     public String loginPage() {
-        return "login";
+        return "aut/login";
     }
 
     @GetMapping("/register/client")
     public String registerClientPage(Model model) {
         model.addAttribute("registerRequest", new RegisterRequest());
         model.addAttribute("userType", "CLIENT");
-        return "register";
+        return "aut/register";
     }
 
     @GetMapping("/register/driver")
     public String registerDriverPage(Model model) {
         model.addAttribute("registerRequest", new RegisterRequest());
         model.addAttribute("userType", "DRIVER");
-        return "register";
+        return "aut/register";
     }
 
     @PostMapping("/register/client")
     public String registerClient(
             @Valid @ModelAttribute("registerRequest") RegisterRequest request,
             BindingResult result,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
-            return "register";
+            model.addAttribute("userType", "CLIENT");
+            return "aut/register";
         }
 
         if (userService.existsByEmail(request.getEmail())) {
             result.rejectValue("email", "error.email", "Этот email уже используется");
-            return "register";
+            model.addAttribute("userType", "CLIENT");
+            return "aut/register";
         }
 
-        // Регистрируем клиента
+        // Регистрируем клиента через сервис
         userService.registerClient(
                 request.getName(),
                 request.getEmail(),
@@ -72,36 +74,32 @@ public class AuthController {
 
     @PostMapping("/register/driver")
     public String registerDriver(
-            @Valid @ModelAttribute("registerRequest") RegisterRequest registerRequest,
+            @Valid @ModelAttribute("registerRequest") RegisterRequest request,
             BindingResult result,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
-            return "register";
+            model.addAttribute("userType", "DRIVER");
+            return "aut/register";
         }
 
-        if (userService.existsByEmail(registerRequest.getEmail())) {
+        if (userService.existsByEmail(request.getEmail())) {
             result.rejectValue("email", "error.email", "Этот email уже используется");
-            return "register";
+            model.addAttribute("userType", "DRIVER");
+            return "aut/register";
         }
 
-        // Создаем нового водителя
-        User user = new User();
-        user.setName(registerRequest.getName());
-        user.setEmail(registerRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        user.setAge(registerRequest.getAge());
-        user.setRole(Role.DRIVER);
-        user.setBalance(BigDecimal.ZERO);
-
-        userService.save(user);
+        // Регистрируем водителя через сервис
+        userService.registerDriver(
+                request.getName(),
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                request.getAge()
+        );
 
         redirectAttributes.addFlashAttribute("successMessage", "Регистрация успешна! Теперь вы можете войти.");
         return "redirect:/login";
     }
 
-    @GetMapping("/dashboard")
-    public String dashboard() {
-        return "dashboard";
-    }
 }

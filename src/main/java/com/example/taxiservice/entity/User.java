@@ -39,6 +39,8 @@ public class User {
 
     private String photo;
 
+    private String photoDeleteHash;
+
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
