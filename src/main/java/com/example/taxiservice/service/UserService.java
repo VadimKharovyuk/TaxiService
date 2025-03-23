@@ -157,4 +157,8 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public User getUserByUsername(String name) {
+      return   userRepository.findByEmail(name).orElse(null);
+    }
 }

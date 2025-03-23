@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Карта водителя</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- HERE Maps JavaScript API -->
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+
+  <style>
+    #map-container {
+      width: 100%;
+      height: 500px;
+      background: #e6e6e6;
+    }
+
+    .order-card {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .order-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-card.active {
+      border-color: #007bff;
+      border-width: 2px;
+    }
+
+    .order-status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    .status-pending {
+      background-color: #ffc107;
+      color: #212529;
+    }
+
+    .status-accepted {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+    .status-on-the-way {
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">Taxi Service</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">Главная</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/cars}">Мои автомобили</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/driver/orders}">Заказы</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" th:href="@{/map/driver}">Карта</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+        </li>
+      </ul>
+      <form class="d-flex" th:action="@{/logout}" method="post">
+        <button class="btn btn-outline-light" type="submit">Выйти</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h2 class="mb-4">Карта заказов</h2>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div id="map-container"></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">Активные заказы</h5>
+        </div>
+        <div class="card-body" id="active-orders-container">
+          <div class="text-center py-3" id="loading-indicator">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-2">Загрузка заказов...</p>
+          </div>
+
+          <div id="no-orders-message" class="text-center py-3 d-none">
+            <p class="text-muted">Активных заказов нет</p>
+          </div>
+
+          <div id="orders-list">
+            <!-- Здесь будут отображаться заказы -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="order-details-container" style="display: none">
+        <div class="card-header">
+          <h5 class="mb-0">Детали заказа</h5>
+        </div>
+        <div class="card-body">
+          <h6 id="order-id"></h6>
+          <div class="mb-3">
+            <strong>Клиент:</strong> <span id="client-name"></span>
+          </div>
+          <div class="mb-3">
+            <strong>Маршрут:</strong>
+            <div id="order-route"></div>
+          </div>
+          <div class="mb-3">
+            <strong>Расстояние:</strong> <span id="order-distance"></span>
+          </div>
+          <div class="mb-3">
+            <strong>Стоимость:</strong> <span id="order-price"></span>
+          </div>
+
+          <div class="d-grid gap-2" id="order-actions">
+            <!-- Здесь будут кнопки для действий с заказом -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  // Получаем ключи API из модели Thymeleaf
+  const apiKey = /*[[${apiKey}]]*/ '';
+  const appId = /*[[${appId}]]*/ '';
+
+  // Создаем платформу HERE Maps
+  const platform = new H.service.Platform({
+    'apikey': apiKey,
+    'app_id': appId
+  });
+
+  // Получаем слои карты
+  const defaultLayers = platform.createDefaultLayers();
+
+  // Инициализируем карту
+  const map = new H.Map(
+          document.getElementById('map-container'),
+          defaultLayers.vector.normal.map,
+          {
+            zoom: 12,
+            center: { lat: 55.7558, lng: 37.6173 } // Центр Москвы по умолчанию
+          }
+  );
+
+  // Добавляем базовые UI компоненты
+  const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+  // Добавляем обработчик изменения размера окна
+  window.addEventListener('resize', () => map.getViewPort().resize());
+
+  // Включаем взаимодействие с картой (перемещение, зум)
+  const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+  // Переменные для хранения данных
+  let driverMarker = null;
+  let ordersMarkers = {};
+  let routeLine = null;
+  let selectedOrderId = null;
+
+  // Функция для создания маркера
+  function addMarker(position, color, text, data) {
+    const svgMarkup = `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2" />
+                <text x="12" y="16" font-size="12pt" font-family="Arial" font-weight="bold" text-anchor="middle" fill="white">${text}</text>
+            </svg>`;
+
+    const icon = new H.map.Icon(svgMarkup);
+    const marker = new H.map.Marker(position, { icon: icon, data: data });
+
+    // Добавляем обработчик клика на маркер
+    marker.addEventListener('tap', function(evt) {
+      const data = evt.target.getData();
+      if (data && data.id) {
+        selectOrder(data.id);
+      }
+    });
+
+    map.addObject(marker);
+    return marker;
+  }
+
+  // Функция для создания карточки заказа
+  function createOrderCard(order) {
+    const statusLabels = {
+      'PENDING': { class: 'status-pending', text: 'Ожидает' },
+      'ACCEPTED': { class: 'status-accepted', text: 'Принят' },
+      'ON_THE_WAY': { class: 'status-on-the-way', text: 'В пути' }
+    };
+
+    const card = document.createElement('div');
+    card.className = `card order-card mb-2 ${selectedOrderId === order.id ? 'active' : ''}`;
+    card.setAttribute('data-order-id', order.id);
+
+    const statusInfo = statusLabels[order.status] || { class: '', text: order.status };
+
+    card.innerHTML = `
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Заказ #${order.id}</h6>
+                        <span class="order-status ${statusInfo.class}">${statusInfo.text}</span>
+                    </div>
+                    <p class="mb-1"><small>Клиент: ${order.clientName}</small></p>
+                    <p class="mb-1"><small>Расстояние: ${order.distance.toFixed(1)} км</small></p>
+                    <p class="mb-0"><small>Стоимость: ${order.price} ₽</small></p>
+                </div>
+            `;
+
+    card.addEventListener('click', () => {
+      selectOrder(order.id);
+    });
+
+    return card;
+  }
+
+  // Функция для отображения деталей заказа
+  function displayOrderDetails(order) {
+    // Заполняем информацию о заказе
+    document.getElementById('order-id').textContent = `Заказ #${order.id}`;
+    document.getElementById('client-name').textContent = order.clientName;
+    document.getElementById('order-route').textContent = 'Строю маршрут...';
+    document.getElementById('order-distance').textContent = `${order.distance.toFixed(1)} км`;
+    document.getElementById('order-price').textContent = `${order.price} ₽`;
+
+    // Очищаем предыдущие действия
+    document.getElementById('order-actions').innerHTML = '';
+
+    // Добавляем кнопки действий в зависимости от статуса заказа
+    if (order.status === 'ACCEPTED') {
+      const startButton = document.createElement('button');
+      startButton.className = 'btn btn-success';
+      startButton.textContent = 'Начать поездку';
+      startButton.addEventListener('click', () => startRide(order.id));
+      document.getElementById('order-actions').appendChild(startButton);
+    } else if (order.status === 'ON_THE_WAY') {
+      const completeButton = document.createElement('button');
+      completeButton.className = 'btn btn-primary';
+      completeButton.textContent = 'Завершить поездку';
+      completeButton.addEventListener('click', () => completeRide(order.id));
+      document.getElementById('order-actions').appendChild(completeButton);
+    }
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'btn btn-outline-danger mt-2';
+    cancelButton.textContent = 'Отменить заказ';
+    cancelButton.addEventListener('click', () => cancelOrder(order.id));
+    document.getElementById('order-actions').appendChild(cancelButton);
+
+    // Показываем контейнер с деталями
+    document.getElementById('order-details-container').style.display = 'block';
+
+    // Строим маршрут
+    buildRoute(order);
+  }
+
+  // Функция для построения маршрута
+  function buildRoute(order) {
+    // Удаляем предыдущий маршрут
+    if (routeLine) {
+      map.removeObject(routeLine);
+      routeLine = null;
+    }
+
+    const router = platform.getRoutingService(null, 8);
+
+    const routeRequestParams = {
+      routingMode: 'fast',
+      transportMode: 'car',
+      origin: `${order.pickupLatitude},${order.pickupLongitude}`,
+      destination: `${order.dropoffLatitude},${order.dropoffLongitude}`,
+      return: 'polyline,summary,actions'
+    };
+
+    router.calculateRoute(routeRequestParams, (result) => {
+      if (result.routes.length) {
+        const route = result.routes[0];
+
+        // Создаем линию маршрута
+        routeLine = new H.map.Polyline(
+                H.geo.LineString.fromFlexiblePolyline(route.sections[0].polyline),
+                {
+                  style: {
+                    lineWidth: 4,
+                    strokeColor: 'rgba(0, 128, 255, 0.7)'
+                  }
+                }
+        );
+
+        map.addObject(routeLine);
+
+        // Получаем инструкции по маршруту
+        let instructions = '';
+        if (route.sections[0].actions) {
+          for (let i = 0; i < Math.min(5, route.sections[0].actions.length); i++) {
+            const action = route.sections[0].actions[i];
+            if (action.instruction) {
+              instructions += `<p><small>${action.instruction}</small></p>`;
+            }
+          }
+        }
+
+        document.getElementById('order-route').innerHTML = instructions || 'Маршрут построен';
+
+        // Устанавливаем область просмотра карты для включения маршрута
+        map.getViewModel().setLookAtData({
+          bounds: routeLine.getBoundingBox()
+        });
+      }
+    }, (error) => {
+      console.error('Ошибка расчета маршрута:', error);
+      document.getElementById('order-route').textContent = 'Ошибка при построении маршрута';
+    });
+  }
+
+  // Функция для выбора заказа
+  function selectOrder(orderId) {
+    selectedOrderId = orderId;
+
+    // Обновляем UI
+    document.querySelectorAll('.order-card').forEach(card => {
+      if (card.getAttribute('data-order-id') == orderId) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+
+    // Загружаем детали заказа
+    fetchOrderDetails(orderId);
+  }
+
+  // Функция для загрузки деталей заказа
+  function fetchOrderDetails(orderId) {
+    fetch(`/api/orders/${orderId}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка получения данных');
+              }
+              return response.json();
+            })
+            .then(order => {
+              displayOrderDetails(order);
+            })
+            .catch(error => {
+              console.error('Ошибка при загрузке деталей заказа:', error);
+              alert('Не удалось загрузить детали заказа. Попробуйте еще раз.');
+            });
+  }
+
+  // Функция для начала поездки
+  function startRide(orderId) {
+    if (!confirm('Вы уверены, что хотите начать поездку?')) {
+      return;
+    }
+
+    fetch(`/api/orders/${orderId}/start`, { method: 'POST' })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка запроса');
+              }
+              return response.json();
+            })
+            .then(order => {
+              alert('Поездка начата!');
+              loadActiveOrders(); // Перезагружаем список заказов
+            })
+            .catch(error => {
+              console.error('Ошибка при начале поездки:', error);
+              alert('Не удалось начать поездку. Попробуйте еще раз.');
+            });
+  }
+
+  // Функция для завершения поездки
+  function completeRide(orderId) {
+    if (!confirm('Вы уверены, что хотите завершить поездку?')) {
+      return;
+    }
+
+    fetch(`/api/orders/${orderId}/complete`, { method: 'POST' })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка запроса');
+              }
+              return response.json();
+            })
+            .then(order => {
+              alert('Поездка успешно завершена!');
+              loadActiveOrders(); // Перезагружаем список заказов
+            })
+            .catch(error => {
+              console.error('Ошибка при завершении поездки:', error);
+              alert('Не удалось завершить поездку. Попробуйте еще раз.');
+            });
+  }
+
+  // Функция для отмены заказа
+  function cancelOrder(orderId) {
+    if (!confirm('Вы уверены, что хотите отменить заказ?')) {
+      return;
+    }
+
+    fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка запроса');
+              }
+              return response.json();
+            })
+            .then(order => {
+              alert('Заказ отменен');
+              loadActiveOrders(); // Перезагружаем список заказов
+            })
+            .catch(error => {
+              console.error('Ошибка при отмене заказа:', error);
+              alert('Не удалось отменить заказ. Попробуйте еще раз.');
+            });
+  }
+
+  // Функция для обновления местоположения водителя
+  function updateDriverLocation(position) {
+    // Удаляем старый маркер
+    if (driverMarker) {
+      map.removeObject(driverMarker);
+    }
+
+    // Добавляем новый маркер
+    driverMarker = addMarker(position, '#4CAF50', 'В', { isDriver: true });
+
+    // Устанавливаем положение карты, если маркер был создан впервые
+    if (!ordersMarkers || Object.keys(ordersMarkers).length === 0) {
+      map.setCenter(position);
+      map.setZoom(14);
+    }
+  }
+
+  // Функция для загрузки активных заказов
+  function loadActiveOrders() {
+    document.getElementById('loading-indicator').style.display = 'block';
+    document.getElementById('no-orders-message').classList.add('d-none');
+    document.getElementById('orders-list').innerHTML = '';
+
+    // Удаляем все маркеры заказов
+    for (const id in ordersMarkers) {
+      map.removeObject(ordersMarkers[id]);
+    }
+    ordersMarkers = {};
+
+    // Удаляем маршрут
+    if (routeLine) {
+      map.removeObject(routeLine);
+      routeLine = null;
+    }
+
+    // Скрываем детали заказа
+    document.getElementById('order-details-container').style.display = 'none';
+
+    fetch('/api/orders/active')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Ошибка получения данных');
+              }
+              return response.json();
+            })
+            .then(orders => {
+              document.getElementById('loading-indicator').style.display = 'none';
+
+              if (orders.length === 0) {
+                document.getElementById('no-orders-message').classList.remove('d-none');
+                return;
+              }
+
+              // Добавляем маркеры для заказов
+              orders.forEach(order => {
+                // Маркер для точки отправления
+                const pickupPosition = { lat: order.pickupLatitude, lng: order.pickupLongitude };
+                ordersMarkers[`pickup_${order.id}`] = addMarker(pickupPosition, '#F44336', 'А', { id: order.id, type: 'pickup' });
+
+                // Маркер для точки назначения
+                const dropoffPosition = { lat: order.dropoffLatitude, lng: order.dropoffLongitude };
+                ordersMarkers[`dropoff_${order.id}`] = addMarker(dropoffPosition, '#2196F3', 'Б', { id: order.id, type: 'dropoff' });
+
+                // Добавляем карточку заказа
+                const orderCard = createOrderCard(order);
+                document.getElementById('orders-list').appendChild(orderCard);
+              });
+
+              // Если есть заказы, выбираем первый
+              if (orders.length > 0) {
+                selectOrder(orders[0].id);
+              }
+            })
+            .catch(error => {
+              document.getElementById('loading-indicator').style.display = 'none';
+              console.error('Ошибка при загрузке заказов:', error);
+            });
+  }
+
+  // Функция для отслеживания геолокации
+  function startLocationTracking() {
+    if (navigator.geolocation) {
+      // Получаем текущее местоположение
+      navigator.geolocation.getCurrentPosition(
+              position => {
+                const pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+                updateDriverLocation(pos);
+              },
+              error => {
+                console.error('Ошибка получения местоположения:', error);
+              }
+      );
+
+      // Начинаем отслеживание
+      navigator.geolocation.watchPosition(
+              position => {
+                const pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+                updateDriverLocation(pos);
+              },
+              error => {
+                console.error('Ошибка отслеживания местоположения:', error);
+              },
+              {
+                enableHighAccuracy: true,
+                maximumAge: 10000, // 10 секунд
+                timeout: 10000 // 10 секунд
+              }
+      );
+    } else {
+      console.error('Геолокация не поддерживается вашим браузером');
+    }
+  }
+
+  // Инициализация
+  document.addEventListener('DOMContentLoaded', () => {
+    // Начинаем отслеживание местоположения
+    startLocationTracking();
+
+    // Загружаем активные заказы
+    loadActiveOrders();
+
+    // Устанавливаем интервал обновления заказов (каждые 30 секунд)
+    setInterval(loadActiveOrders, 30000);
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

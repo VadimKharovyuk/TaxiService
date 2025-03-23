@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Заказ такси - Выбрать маршрут</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+  <!-- HERE Maps JavaScript API -->
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+
+  <style>
+    #map-container {
+      width: 100%;
+      height: 450px;
+      background: #e6e6e6;
+      position: relative;
+    }
+
+    .controls-container {
+      margin: 20px 0;
+    }
+
+    .card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-selector {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .category-item {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+
+    .category-item.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    .map-overlay {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">Taxi Service</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">Главная</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/orders}">Мои заказы</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" th:href="@{/map/order}">Заказать такси</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+        </li>
+      </ul>
+      <form class="d-flex" th:action="@{/logout}" method="post">
+        <button class="btn btn-outline-light" type="submit">Выйти</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h2 class="mb-4">Заказать такси</h2>
+
+  <div class="controls-container">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+          <input type="text" id="pickup-address" class="form-control" placeholder="Откуда">
+          <button class="btn btn-outline-secondary" type="button" id="search-pickup">Найти</button>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-pin-map"></i></span>
+          <input type="text" id="destination-address" class="form-control" placeholder="Куда">
+          <button class="btn btn-outline-secondary" type="button" id="search-destination">Найти</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map container -->
+  <div id="map-container">
+    <div class="map-overlay d-none" id="loading-indicator">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Загрузка...</span>
+      </div>
+      <span class="ms-2">Поиск ближайших автомобилей...</span>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Детали поездки</h5>
+        </div>
+        <div class="card-body">
+          <!-- Класс автомобиля -->
+          <h6 class="mb-3">Класс автомобиля:</h6>
+          <div class="category-selector">
+            <div class="category-item active" data-category="STANDARD">
+              <i class="bi bi-car-front"></i>
+              <div>Стандарт</div>
+            </div>
+            <div class="category-item" data-category="BUSINESS">
+              <i class="bi bi-car-front-fill"></i>
+              <div>Бизнес</div>
+            </div>
+            <div class="category-item" data-category="LUXURY">
+              <i class="bi bi-car-front-fill"></i>
+              <div>Люкс</div>
+            </div>
+          </div>
+
+          <!-- Информация о маршруте -->
+          <div class="trip-info mt-3">
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Расстояние:</strong> <span id="distance-info">-</span></p>
+                <p><strong>Время в пути:</strong> <span id="duration-info">-</span></p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Стоимость:</strong> <span id="price-info" class="fs-4">-</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="d-grid gap-2">
+        <button id="order-taxi-btn" class="btn btn-primary btn-lg" disabled>Заказать такси</button>
+        <button id="reset-map-btn" class="btn btn-outline-secondary">Сбросить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  // Получаем ключи API из модели Thymeleaf
+  const apiKey = /*[[${apiKey}]]*/ '';
+  const appId = /*[[${appId}]]*/ '';
+
+  // Текущая выбранная категория
+  let selectedCategory = 'STANDARD';
+
+  // Создаем платформу HERE Maps
+  const platform = new H.service.Platform({
+    'apikey': apiKey,
+    'app_id': appId
+  });
+
+  // Получаем слои карты
+  const defaultLayers = platform.createDefaultLayers();
+
+  // Инициализируем карту
+  const map = new H.Map(
+          document.getElementById('map-container'),
+          defaultLayers.vector.normal.map,
+          {
+            zoom: 13,
+            center: { lat: 55.7558, lng: 37.6173 } // Центр Москвы по умолчанию
+          }
+  );
+
+  // Добавляем базовые UI компоненты
+  const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+  // Добавляем обработчик изменения размера окна
+  window.addEventListener('resize', () => map.getViewPort().resize());
+
+  // Включаем взаимодействие с картой (перемещение, зум)
+  const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+  // Переменные для хранения маркеров и маршрута
+  let pickupMarker = null;
+  let destinationMarker = null;
+  let routeLine = null;
+
+  // Переменные для хранения координат
+  let pickupLatitude = null;
+  let pickupLongitude = null;
+  let dropoffLatitude = null;
+  let dropoffLongitude = null;
+
+  // Функция для создания маркера
+  function addMarker(position, color, text) {
+    const svgMarkup = `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2" />
+                <text x="12" y="16" font-size="12pt" font-family="Arial" font-weight="bold" text-anchor="middle" fill="white">${text}</text>
+            </svg>`;
+
+    const icon = new H.map.Icon(svgMarkup);
+    const marker = new H.map.Marker(position, { icon: icon });
+    map.addObject(marker);
+    return marker;
+  }
+
+  // Функция для геокодирования адреса
+  function geocodeAddress(address, type) {
+    const geocodingService = platform.getSearchService();
+
+    // Показываем индикатор загрузки
+    document.getElementById('loading-indicator').classList.remove('d-none');
+
+    geocodingService.geocode({ q: address }, (result) => {
+      // Скрываем индикатор загрузки
+      document.getElementById('loading-indicator').classList.add('d-none');
+
+      if (result.items && result.items.length > 0) {
+        const position = result.items[0].position;
+
+        // Удаляем предыдущий маркер, если он существует
+        if (type === 'pickup' && pickupMarker) {
+          map.removeObject(pickupMarker);
+        } else if (type === 'destination' && destinationMarker) {
+          map.removeObject(destinationMarker);
+        }
+
+        // Добавляем новый маркер
+        if (type === 'pickup') {
+          pickupMarker = addMarker(position, 'green', 'А');
+          document.getElementById('pickup-address').value = result.items[0].address.label;
+          pickupLatitude = position.lat;
+          pickupLongitude = position.lng;
+        } else {
+          destinationMarker = addMarker(position, 'red', 'Б');
+          document.getElementById('destination-address').value = result.items[0].address.label;
+          dropoffLatitude = position.lat;
+          dropoffLongitude = position.lng;
+        }
+
+        // Если есть оба маркера, рассчитываем маршрут
+        if (pickupMarker && destinationMarker) {
+          calculateRoute();
+        } else {
+          map.setCenter(position);
+          map.setZoom(15);
+        }
+      } else {
+        alert('Адрес не найден');
+      }
+    }, (error) => {
+      // Скрываем индикатор загрузки
+      document.getElementById('loading-indicator').classList.add('d-none');
+
+      console.error('Ошибка геокодирования:', error);
+      alert('Ошибка при поиске адреса. Пожалуйста, попробуйте еще раз.');
+    });
+  }
+
+  // Функция для расчета маршрута
+  function calculateRoute() {
+    if (!pickupMarker || !destinationMarker) {
+      return;
+    }
+
+    // Удаляем предыдущий маршрут, если он существует
+    if (routeLine) {
+      map.removeObject(routeLine);
+    }
+
+    // Показываем индикатор загрузки
+    document.getElementById('loading-indicator').classList.remove('d-none');
+
+    const router = platform.getRoutingService(null, 8);
+
+    const routeRequestParams = {
+      routingMode: 'fast',
+      transportMode: 'car',
+      origin: `${pickupLatitude},${pickupLongitude}`,
+      destination: `${dropoffLatitude},${dropoffLongitude}`,
+      return: 'polyline,summary'
+    };
+
+    router.calculateRoute(routeRequestParams, (result) => {
+      // Скрываем индикатор загрузки
+      document.getElementById('loading-indicator').classList.add('d-none');
+
+      if (result.routes.length) {
+        const route = result.routes[0];
+
+        // Создаем линию маршрута
+        routeLine = new H.map.Polyline(
+                H.geo.LineString.fromFlexiblePolyline(route.sections[0].polyline),
+                {
+                  style: {
+                    lineWidth: 4,
+                    strokeColor: 'rgba(0, 128, 255, 0.7)'
+                  }
+                }
+        );
+
+        map.addObject(routeLine);
+
+        // Получаем сводку маршрута
+        const summary = route.sections[0].summary;
+        const distance = summary.length / 1000; // метры в километры
+        const duration = Math.ceil(summary.duration / 60); // секунды в минуты
+
+        // Отображаем информацию о маршруте
+        document.getElementById('distance-info').textContent = `${distance.toFixed(2)} км`;
+        document.getElementById('duration-info').textContent = `${duration} мин`;
+
+        // Рассчитываем ориентировочную стоимость
+        calculatePrice(distance, duration);
+
+        // Включаем кнопку заказа
+        document.getElementById('order-taxi-btn').disabled = false;
+
+        // Устанавливаем область просмотра карты для включения маршрута
+        map.getViewModel().setLookAtData({
+          bounds: routeLine.getBoundingBox()
+        });
+      }
+    }, (error) => {
+      // Скрываем индикатор загрузки
+      document.getElementById('loading-indicator').classList.add('d-none');
+
+      console.error('Ошибка расчета маршрута:', error);
+      alert('Ошибка при расчете маршрута. Пожалуйста, попробуйте другие адреса.');
+    });
+  }
+
+  // Функция для расчета стоимости
+  function calculatePrice(distance, duration) {
+    // Базовые тарифы для разных категорий
+    const tariffs = {
+      'STANDARD': { baseFee: 100, pricePerKm: 20 },
+      'BUSINESS': { baseFee: 200, pricePerKm: 30 },
+      'LUXURY': { baseFee: 300, pricePerKm: 50 }
+    };
+
+    const tariff = tariffs[selectedCategory];
+    const estimatedPrice = tariff.baseFee + (distance * tariff.pricePerKm);
+
+    document.getElementById('price-info').textContent = `${estimatedPrice.toFixed(0)} ₽`;
+  }
+
+  // Функция для сброса карты
+  function resetMap() {
+    // Удаляем маркеры и маршрут
+    if (pickupMarker) {
+      map.removeObject(pickupMarker);
+      pickupMarker = null;
+    }
+
+    if (destinationMarker) {
+      map.removeObject(destinationMarker);
+      destinationMarker = null;
+    }
+
+    if (routeLine) {
+      map.removeObject(routeLine);
+      routeLine = null;
+    }
+
+    // Сбрасываем поля ввода
+    document.getElementById('pickup-address').value = '';
+    document.getElementById('destination-address').value = '';
+
+    // Сбрасываем информацию о маршруте
+    document.getElementById('distance-info').textContent = '-';
+    document.getElementById('duration-info').textContent = '-';
+    document.getElementById('price-info').textContent = '-';
+
+    // Отключаем кнопку заказа
+    document.getElementById('order-taxi-btn').disabled = true;
+
+    // Сбрасываем координаты
+    pickupLatitude = null;
+    pickupLongitude = null;
+    dropoffLatitude = null;
+    dropoffLongitude = null;
+
+    // Возвращаем карту к исходному виду
+    map.setCenter({ lat: 55.7558, lng: 37.6173 });
+    map.setZoom(13);
+  }
+
+  // Добавляем обработчики событий для кнопок поиска
+  document.getElementById('search-pickup').addEventListener('click', () => {
+    const address = document.getElementById('pickup-address').value;
+    if (address) {
+      geocodeAddress(address, 'pickup');
+    }
+  });
+
+  document.getElementById('search-destination').addEventListener('click', () => {
+    const address = document.getElementById('destination-address').value;
+    if (address) {
+      geocodeAddress(address, 'destination');
+    }
+  });
+
+  // Добавляем обработчики для полей ввода (поиск при нажатии Enter)
+  document.getElementById('pickup-address').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      const address = document.getElementById('pickup-address').value;
+      if (address) {
+        geocodeAddress(address, 'pickup');
+      }
+    }
+  });
+
+  document.getElementById('destination-address').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      const address = document.getElementById('destination-address').value;
+      if (address) {
+        geocodeAddress(address, 'destination');
+      }
+    }
+  });
+
+  // Добавляем обработчик для категорий автомобилей
+  document.querySelectorAll('.category-item').forEach(item => {
+    item.addEventListener('click', () => {
+      // Убираем активный класс у всех категорий
+      document.querySelectorAll('.category-item').forEach(el => {
+        el.classList.remove('active');
+      });
+
+      // Добавляем активный класс к выбранной категории
+      item.classList.add('active');
+
+      // Сохраняем выбранную категорию
+      selectedCategory = item.dataset.category;
+
+      // Пересчитываем стоимость, если маршрут уже построен
+      if (routeLine) {
+        const distance = parseFloat(document.getElementById('distance-info').textContent);
+        const duration = parseInt(document.getElementById('duration-info').textContent);
+
+        if (!isNaN(distance) && !isNaN(duration)) {
+          calculatePrice(distance, duration);
+        }
+      }
+    });
+  });
+
+  // Добавляем обработчик для кнопки заказа
+  document.getElementById('order-taxi-btn').addEventListener('click', () => {
+    // Проверяем, что у нас есть все необходимые данные
+    if (!pickupLatitude || !pickupLongitude || !dropoffLatitude || !dropoffLongitude) {
+      alert('Пожалуйста, выберите точки отправления и назначения');
+      return;
+    }
+
+    // Показываем индикатор загрузки
+    document.getElementById('loading-indicator').classList.remove('d-none');
+
+    // Получаем цену из элемента (удаляем символ валюты и другие нечисловые символы)
+    const priceText = document.getElementById('price-info').textContent;
+    const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
+
+    // Получаем расстояние и время в пути
+    const distanceText = document.getElementById('distance-info').textContent;
+    const distance = parseFloat(distanceText.replace(/[^\d.]/g, ''));
+
+    const durationText = document.getElementById('duration-info').textContent;
+    const duration = parseInt(durationText.replace(/[^\d]/g, ''));
+
+    // Отправляем запрос на создание заказа
+    fetch('/api/orders/new', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.getAttribute('content')
+      },
+      body: JSON.stringify({
+        pickupLatitude: pickupLatitude,
+        pickupLongitude: pickupLongitude,
+        dropoffLatitude: dropoffLatitude,
+        dropoffLongitude: dropoffLongitude,
+        category: selectedCategory,
+        price: price,
+        distance: distance,
+        duration: duration
+      })
+    })
+            .then(response => {
+              // Скрываем индикатор загрузки
+              document.getElementById('loading-indicator').classList.add('d-none');
+
+              if (!response.ok) {
+                throw new Error('Ошибка сети');
+              }
+              return response.json();
+            })
+            .then(data => {
+              alert('Ваш заказ успешно создан! Номер заказа: ' + data.id);
+              window.location.href = '/orders/active';  // Перенаправляем на страницу активных заказов
+            })
+            .catch(error => {
+              // Скрываем индикатор загрузки
+              document.getElementById('loading-indicator').classList.add('d-none');
+
+              console.error('Ошибка создания заказа:', error);
+              alert('Ошибка при создании заказа. Пожалуйста, попробуйте еще раз.');
+            });
+  });
+
+  // Добавляем обработчик для кнопки сброса
+  document.getElementById('reset-map-btn').addEventListener('click', resetMap);
+
+  // Определяем текущее местоположение пользователя при загрузке страницы
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+            position => {
+              const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              map.setCenter(userLocation);
+              map.setZoom(15);
+
+              // Если в URL есть параметр setPickup=true, устанавливаем текущее местоположение как точку отправления
+              const urlParams = new URLSearchParams(window.location.search);
+              if (urlParams.get('setPickup') === 'true') {
+                pickupMarker = addMarker(userLocation, 'green', 'А');
+                pickupLatitude = userLocation.lat;
+                pickupLongitude = userLocation.lng;
+
+                // Получаем адрес для отображения
+                const service = platform.getSearchService();
+                service.reverseGeocode(
+                        { at: `${userLocation.lat},${userLocation.lng}` },
+                        result => {
+                          if (result.items && result.items.length > 0) {
+                            document.getElementById('pickup-address').value = result.items[0].address.label;
+                          }
+                        }
+                );
+              }
+            },
+            error => {
+              console.error('Ошибка определения местоположения:', error);
+              // Если не удалось определить местоположение, оставляем карту с видом на Москву
+            }
+    );
+  }
+
+  // Проверяем параметры URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const lat = urlParams.get('lat');
+  const lng = urlParams.get('lng');
+
+  // Если переданы координаты, устанавливаем их как точку отправления
+  if (lat && lng) {
+    const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
+    pickupMarker = addMarker(position, 'green', 'А');
+    pickupLatitude = position.lat;
+    pickupLongitude = position.lng;
+
+    // Получаем адрес для отображения
+    const service = platform.getSearchService();
+    service.reverseGeocode(
+            { at: `${position.lat},${position.lng}` },
+            result => {
+              if (result.items && result.items.length > 0) {
+                document.getElementById('pickup-address').value = result.items[0].address.label;
+              }
+            }
+    );
+
+    // Центрируем карту на маркере
+    map.setCenter(position);
+    map.setZoom(15);
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

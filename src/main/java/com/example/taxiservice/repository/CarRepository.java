@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -42,4 +43,10 @@ public interface CarRepository extends JpaRepository<Car, Long> {
                                                 @Param("longitude") Double longitude,
                                                 @Param("radius") Double radius,
                                                 @Param("category") CarCategory category);
+
+    @Query("SELECT c FROM Car c WHERE c.isAvailable = true")
+   List<Car> findAllAvailableCars();
+
+    List<Car> findByIsAvailableTrue();
+    List<Car> findByIsAvailableTrueAndCategory(CarCategory category);
 }

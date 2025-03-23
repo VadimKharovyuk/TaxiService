@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,25 +48,28 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth
                                 .requestMatchers("/login/**").permitAll()
-                                .requestMatchers("/api/car-brands/**").permitAll()
-                                .requestMatchers("/login", "/register/**").permitAll()
-                                .requestMatchers("/moderator/**", "/tickets/**").hasAnyRole("ADMIN", "MODERATOR")
+                                .requestMatchers("/register/**").permitAll()
                                 .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                                .requestMatchers("/moderator/**", "/tickets/**").hasAnyRole("ADMIN", "MODERATOR")
                                 .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard", true)
+                        .defaultSuccessUrl("/dashboard")
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .deleteCookies("JSESSIONID")  // Важно: удаляем cookie сессии
+                        .invalidateHttpSession(true)  // Важно: инвалидируем HTTP сессию
+                        .clearAuthentication(true)    // Очищаем данные аутентификации
                         .logoutSuccessUrl("/login?logout")
-                        .permitAll()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(1)  // Один пользователь может иметь только одну активную сессию
+                        .expiredUrl("/login?expired")
                 );
-
-        http.authenticationProvider(authenticationProvider());
 
         return http.build();
     }

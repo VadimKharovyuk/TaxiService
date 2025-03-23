@@ -1,5 +1,6 @@
 package com.example.taxiservice.entity;
 
+import com.example.taxiservice.enums.CarCategory;
 import com.example.taxiservice.enums.OrderStatus;
 import com.example.taxiservice.util.GeoUtils;
 import com.example.taxiservice.util.LocationPoint;
@@ -11,7 +12,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "orders")
 @Data
@@ -48,6 +48,10 @@ public class Order {
     @Column(nullable = false)
     private BigDecimal price;
 
+    // Добавляем поле категории
+    @Enumerated(EnumType.STRING)
+    private CarCategory category = CarCategory.STANDARD; // По умолчанию стандартная категория
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
@@ -59,6 +63,4 @@ public class Order {
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
     private Payment payment;
-
-
 }

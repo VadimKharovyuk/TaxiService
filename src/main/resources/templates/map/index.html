@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Карта - Taxi Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+  <!-- HERE Maps JavaScript API -->
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+  <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+
+  <style>
+    #map-container {
+      width: 100%;
+      height: 600px;
+      background: #e6e6e6;
+    }
+
+    .search-panel {
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 0.25rem;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .map-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+
+    .map-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .map-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    .map-btn:hover {
+      background: #f8f9fa;
+    }
+
+    .map-btn:active {
+      background: #e9ecef;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">Taxi Service</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">Главная</a>
+        </li>
+        <li sec:authorize="hasRole('CLIENT')">
+          <a class="nav-link" th:href="@{/orders}">Мои заказы</a>
+        </li>
+        <li sec:authorize="hasRole('CLIENT')">
+          <a class="nav-link" th:href="@{/map/order}">Заказать такси</a>
+        </li>
+        <li sec:authorize="hasRole('DRIVER')">
+          <a class="nav-link" th:href="@{/cars}">Мои автомобили</a>
+        </li>
+        <li sec:authorize="hasRole('DRIVER')">
+          <a class="nav-link" th:href="@{/driver/orders}">Заказы</a>
+        </li>
+        <li sec:authorize="hasRole('DRIVER')">
+          <a class="nav-link" th:href="@{/map/driver}">Карта заказов</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" th:href="@{/map}">Карта</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+        </li>
+      </ul>
+      <div class="d-flex">
+        <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn btn-outline-light me-2">Войти</a>
+        <form sec:authorize="isAuthenticated()" class="d-flex" th:action="@{/logout}" method="post">
+          <button class="btn btn-outline-light" type="submit">Выйти</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h2 class="mb-4">Интерактивная карта</h2>
+
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="search-panel">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="input-group">
+              <input type="text" id="search-input" class="form-control" placeholder="Введите адрес или место для поиска...">
+              <button class="btn btn-primary" type="button" id="search-button">
+                <i class="bi bi-search"></i> Найти
+              </button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-grid">
+              <button class="btn btn-outline-primary" type="button" id="location-button">
+                <i class="bi bi-geo-alt"></i> Моё местоположение
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="position-relative mb-4">
+    <div id="map-container"></div>
+
+    <div class="map-overlay">
+      <div class="map-controls">
+        <button class="map-btn" id="zoom-in-btn">
+          <i class="bi bi-plus"></i>
+        </button>
+        <button class="map-btn" id="zoom-out-btn">
+          <i class="bi bi-dash"></i>
+        </button>
+        <button class="map-btn" id="traffic-btn" title="Показать пробки">
+          <i class="bi bi-car-front"></i>
+        </button>
+        <button class="map-btn" id="satellite-btn" title="Спутниковый вид">
+          <i class="bi bi-globe"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Информация о местоположении</h5>
+        </div>
+        <div class="card-body">
+          <div id="location-info">
+            <p class="text-muted text-center">Нажмите на карту, чтобы получить информацию о местоположении</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4" sec:authorize="hasRole('CLIENT')">
+    <a th:href="@{/map/order}" class="btn btn-success">
+      <i class="bi bi-taxi-front"></i> Заказать такси
+    </a>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  // Получаем ключи API из модели Thymeleaf
+  const apiKey = /*[[${apiKey}]]*/ '';
+  const appId = /*[[${appId}]]*/ '';
+
+  // Создаем платформу HERE Maps
+  const platform = new H.service.Platform({
+    'apikey': apiKey,
+    'app_id': appId
+  });
+
+  // Получаем слои карты
+  const defaultLayers = platform.createDefaultLayers();
+
+  // Инициализируем карту
+  const map = new H.Map(
+          document.getElementById('map-container'),
+          defaultLayers.vector.normal.map,
+          {
+            zoom: 13,
+            center: { lat: 55.7558, lng: 37.6173 } // Центр Москвы по умолчанию
+          }
+  );
+
+  // Добавляем базовые UI компоненты
+  const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+  // Добавляем обработчик изменения размера окна
+  window.addEventListener('resize', () => map.getViewPort().resize());
+
+  // Включаем взаимодействие с картой (перемещение, зум)
+  const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+  // Переменные для хранения слоев
+  let trafficLayer = null;
+  let currentMarker = null;
+  let isTrafficVisible = false;
+  let isSatelliteView = false;
+
+  // Функция для создания маркера
+  function addMarker(position, text = '') {
+    // Удаляем предыдущий маркер, если он есть
+    if (currentMarker) {
+      map.removeObject(currentMarker);
+    }
+
+    const svgMarkup = `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#4285F4" stroke="white" stroke-width="2" />
+                <text x="12" y="16" font-size="10pt" font-family="Arial" font-weight="bold" text-anchor="middle" fill="white">${text}</text>
+            </svg>`;
+
+    const icon = new H.map.Icon(svgMarkup);
+    currentMarker = new H.map.Marker(position, { icon: icon });
+    map.addObject(currentMarker);
+
+    // Центрируем карту на маркере
+    map.setCenter(position);
+
+    // Получаем данные о местоположении
+    reverseGeocode(position);
+  }
+
+  // Функция для получения адреса по координатам
+  function reverseGeocode(position) {
+    const service = platform.getSearchService();
+    const reverseGeocodingParameters = {
+      at: `${position.lat},${position.lng}`
+    };
+
+    service.reverseGeocode(
+            reverseGeocodingParameters,
+            displayLocationInfo,
+            (error) => {
+              console.error('Ошибка получения адреса:', error);
+              document.getElementById('location-info').innerHTML =
+                      `<p>Координаты: ${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}</p>
+                         <p class="text-danger">Не удалось получить информацию об адресе</p>`;
+            }
+    );
+  }
+
+  // Функция для отображения информации о местоположении
+  function displayLocationInfo(result) {
+    const location = result.items[0];
+
+    if (location) {
+      const address = location.address;
+      const position = location.position;
+
+      let addressText = '';
+      if (address.label) {
+        addressText = address.label;
+      } else {
+        // Составляем адрес из доступных компонентов
+        const components = [];
+        if (address.country) components.push(address.country);
+        if (address.state) components.push(address.state);
+        if (address.city) components.push(address.city);
+        if (address.district) components.push(address.district);
+        if (address.street) components.push(address.street);
+        if (address.houseNumber) components.push(address.houseNumber);
+        if (address.postalCode) components.push(address.postalCode);
+
+        addressText = components.join(', ');
+      }
+
+      // Отображаем информацию
+      document.getElementById('location-info').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Адрес:</h6>
+                            <p>${addressText}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Координаты:</h6>
+                            <p>${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}</p>
+                        </div>
+                    </div>
+                    <div sec:authorize="hasRole('CLIENT')" class="mt-3">
+                        <a href="/map/order?lat=${position.lat}&lng=${position.lng}" class="btn btn-sm btn-outline-primary">
+                            Использовать как точку отправления
+                        </a>
+                    </div>
+                `;
+    } else {
+      document.getElementById('location-info').innerHTML =
+              `<p class="text-muted">Не удалось получить информацию о местоположении</p>`;
+    }
+  }
+
+  // Функция для поиска адреса
+  function searchAddress(query) {
+    if (!query.trim()) return;
+
+    const service = platform.getSearchService();
+
+    service.geocode(
+            { q: query },
+            (result) => {
+              if (result.items && result.items.length > 0) {
+                const location = result.items[0];
+                const position = location.position;
+
+                // Добавляем маркер
+                addMarker(position);
+
+                // Устанавливаем зум
+                map.setZoom(15);
+              } else {
+                alert('Ничего не найдено. Попробуйте другой запрос.');
+              }
+            },
+            (error) => {
+              console.error('Ошибка поиска:', error);
+              alert('Произошла ошибка при поиске. Попробуйте еще раз.');
+            }
+    );
+  }
+
+  // Функция для получения текущего местоположения
+  function getCurrentLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+
+                // Добавляем маркер
+                addMarker(pos, 'Я');
+
+                // Устанавливаем зум
+                map.setZoom(15);
+              },
+              (error) => {
+                console.error('Ошибка получения местоположения:', error);
+                alert('Не удалось определить ваше местоположение. Проверьте настройки разрешений браузера.');
+              }
+      );
+    } else {
+      alert('Геолокация не поддерживается вашим браузером.');
+    }
+  }
+
+  // Функция для переключения отображения пробок
+  function toggleTraffic() {
+    if (isTrafficVisible) {
+      // Удаляем слой пробок
+      if (trafficLayer) {
+        map.removeLayer(trafficLayer);
+        trafficLayer = null;
+      }
+      document.getElementById('traffic-btn').classList.remove('active');
+    } else {
+      // Добавляем слой пробок
+      trafficLayer = platform.getTrafficService().createFlowLayer({
+        min: 0,
+        max: 1
+      });
+      map.addLayer(trafficLayer);
+      document.getElementById('traffic-btn').classList.add('active');
+    }
+
+    isTrafficVisible = !isTrafficVisible;
+  }
+
+  // Функция для переключения между обычным и спутниковым видом
+  function toggleSatelliteView() {
+    if (isSatelliteView) {
+      // Переключаемся на обычный вид
+      map.setBaseLayer(defaultLayers.vector.normal.map);
+      document.getElementById('satellite-btn').classList.remove('active');
+    } else {
+      // Переключаемся на спутниковый вид
+      map.setBaseLayer(defaultLayers.raster.satellite.map);
+      document.getElementById('satellite-btn').classList.add('active');
+    }
+
+    isSatelliteView = !isSatelliteView;
+  }
+
+  // Обработчик клика по карте
+  map.addEventListener('tap', (evt) => {
+    const position = map.screenToGeo(
+            evt.currentPointer.viewportX,
+            evt.currentPointer.viewportY
+    );
+
+    addMarker(position);
+  });
+
+  // Обработчик для кнопки поиска
+  document.getElementById('search-button').addEventListener('click', () => {
+    const query = document.getElementById('search-input').value;
+    searchAddress(query);
+  });
+
+  // Обработчик для поля поиска (при нажатии Enter)
+  document.getElementById('search-input').addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      const query = document.getElementById('search-input').value;
+      searchAddress(query);
+    }
+  });
+
+  // Обработчик для кнопки определения местоположения
+  document.getElementById('location-button').addEventListener('click', getCurrentLocation);
+
+  // Обработчик для кнопки увеличения масштаба
+  document.getElementById('zoom-in-btn').addEventListener('click', () => {
+    map.setZoom(map.getZoom() + 1);
+  });
+
+  // Обработчик для кнопки уменьшения масштаба
+  document.getElementById('zoom-out-btn').addEventListener('click', () => {
+    map.setZoom(map.getZoom() - 1);
+  });
+
+  // Обработчик для кнопки отображения пробок
+  document.getElementById('traffic-btn').addEventListener('click', toggleTraffic);
+
+  // Обработчик для кнопки переключения вида
+  document.getElementById('satellite-btn').addEventListener('click', toggleSatelliteView);
+
+  // Проверяем наличие параметров в URL для начальной позиции
+  const urlParams = new URLSearchParams(window.location.search);
+  const lat = urlParams.get('lat');
+  const lng = urlParams.get('lng');
+
+  if (lat && lng) {
+    const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
+    addMarker(position);
+    map.setZoom(15);
+  } else {
+    // Получаем текущее местоположение при загрузке страницы
+    getCurrentLocation();
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

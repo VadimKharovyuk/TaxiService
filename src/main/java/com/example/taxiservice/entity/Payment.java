@@ -1,5 +1,4 @@
 package com.example.taxiservice.entity;
-
 import com.example.taxiservice.enums.PaymentMethod;
 import com.example.taxiservice.enums.PaymentStatus;
 import jakarta.persistence.*;
@@ -38,6 +37,10 @@ public class Payment {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Дополнительные поля для отслеживания платежей
+    private String transactionId; // ID транзакции в платежной системе
+    private String receiptUrl; // URL для доступа к чеку
 
     // Методы для обработки платежа
     public void processPayment() {

@@ -38,9 +38,9 @@ public class HibernateSpatialConfig {
         properties.put("hibernate.physical_naming_strategy",
                 "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy");
 
-        // Добавляем показ SQL запросов для отладки
-        properties.put("hibernate.show_sql", "true");
-        properties.put("hibernate.format_sql", "true");
+//        // Добавляем показ SQL запросов для отладки
+//        properties.put("hibernate.show_sql", "true");
+//        properties.put("hibernate.format_sql", "true");
 
         // Автоматическое создание схемы базы данных
         properties.put("hibernate.hbm2ddl.auto", "update");

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Заказ успешно оформлен</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    .success-icon {
+      font-size: 5rem;
+      color: #28a745;
+    }
+    .order-summary {
+      background-color: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">Taxi Service</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">Главная</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" th:href="@{/taxi-orders/active}">Мои заказы</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/map/order}">Заказать такси</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+        </li>
+      </ul>
+      <form class="d-flex" th:action="@{/logout}" method="post">
+        <button class="btn btn-outline-light" type="submit">Выйти</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+      <i class="bi bi-check-circle-fill success-icon"></i>
+      <h2 class="mt-3">Заказ успешно оформлен!</h2>
+      <p class="lead">Ваш заказ такси был успешно создан. Скоро с вами свяжется водитель.</p>
+
+      <div class="order-summary mt-4 text-start">
+        <h4 class="mb-3">Информация о заказе #<span th:text="${order.id}"></span></h4>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <p><strong>Статус:</strong> <span th:text="${order.status.displayName}"></span></p>
+            <p><strong>Создан:</strong> <span th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></span></p>
+          </div>
+          <div class="col-md-6 mb-3">
+            <p th:if="${order.car != null}">
+              <strong>Автомобиль:</strong>
+              <span th:text="${order.car.brand.name + ' ' + order.car.model}"></span>
+            </p>
+            <p th:if="${order.car != null}">
+              <strong>Номер:</strong> <span th:text="${order.car.licensePlate}"></span>
+            </p>
+            <p th:if="${order.car != null}">
+              <strong>Цвет:</strong> <span th:text="${order.car.color}"></span>
+            </p>
+          </div>
+        </div>
+
+        <div th:if="${order.car != null && order.car.driver != null}" class="driver-info mt-3 p-3 bg-light border rounded">
+          <h5>Ваш водитель</h5>
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+            </div>
+            <div>
+              <p class="mb-1"><strong th:text="${order.car.driver.firstName + ' ' + order.car.driver.lastName}"></strong></p>
+              <p class="mb-1">
+                <i class="bi bi-telephone"></i>
+                <a th:href="'tel:' + ${order.car.driver.phone}" th:text="${order.car.driver.phone}"></a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <a th:href="@{/taxi-orders/details/{id}(id=${order.id})}" class="btn btn-primary me-2">
+          <i class="bi bi-info-circle"></i> Детали заказа
+        </a>
+        <a th:href="@{/taxi-orders/active}" class="btn btn-outline-secondary">
+          <i class="bi bi-list"></i> Все заказы
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
