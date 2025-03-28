@@ -1,62 +1,602 @@
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">-->
+<!--<head>-->
+<!--  <meta charset="UTF-8">-->
+<!--  <title>Панель управления</title>-->
+<!--  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--</head>-->
+<!--<body>-->
+<!--<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">-->
+<!--  <div class="container-fluid">-->
+<!--    <a class="navbar-brand" href="#">Taxi Service</a>-->
+<!--    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">-->
+<!--      <span class="navbar-toggler-icon"></span>-->
+<!--    </button>-->
+<!--    <div class="collapse navbar-collapse" id="navbarCollapse">-->
+<!--      <ul class="navbar-nav me-auto mb-2 mb-md-0">-->
+<!--        <li class="nav-item">-->
+<!--          <a class="nav-link active" aria-current="page" th:href="@{/dashboard}">Главная</a>-->
+<!--        </li>-->
+<!--        <li class="nav-item" sec:authorize="hasRole('ROLE_CLIENT')">-->
+<!--          <a class="nav-link" th:href="@{/orders}">Мои заказы</a>-->
+<!--        </li>-->
+<!--        <li class="nav-item" sec:authorize="hasRole('ROLE_DRIVER')">-->
+<!--          <a class="nav-link" th:href="@{/cars}">Мои автомобили</a>-->
+<!--        </li>-->
+<!--        <li class="nav-item" sec:authorize="hasRole('ROLE_DRIVER')">-->
+<!--          <a class="nav-link" th:href="@{/driver/orders}">Заказы</a>-->
+<!--        </li>-->
+<!--        <li class="nav-item">-->
+<!--          <a class="nav-link" th:href="@{/profile}">Профиль</a>-->
+<!--        </li>-->
+<!--      </ul>-->
+<!--      <form class="d-flex" th:action="@{/logout}" method="post">-->
+<!--        <span class="navbar-text me-3" sec:authentication="name"></span>-->
+<!--        <button class="btn btn-outline-danger" type="submit">Выйти</button>-->
+<!--      </form>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</nav>-->
+
+<!--<main class="container">-->
+<!--  <div class="bg-light p-5 rounded">-->
+<!--    <h1>Добро пожаловать в систему Taxi Service</h1>-->
+<!--    <p class="lead">Вы успешно вошли в систему!</p>-->
+
+<!--    <div sec:authorize="hasRole('ROLE_CLIENT')">-->
+<!--      <h2>Клиентская панель</h2>-->
+<!--      <p>Здесь вы можете управлять своими заказами такси.</p>-->
+<!--      <a class="btn btn-primary" th:href="@{/order/new}">Создать новый заказ</a>-->
+<!--    </div>-->
+
+<!--    <div sec:authorize="hasRole('ROLE_DRIVER')">-->
+<!--      <h2>Панель водителя</h2>-->
+<!--      <p>Здесь вы можете управлять своими автомобилями и принимать заказы.</p>-->
+<!--      <a class="btn btn-primary" th:href="@{/car/new}">Добавить автомобиль</a>-->
+<!--      <a class="btn btn-success ms-2" th:href="@{/driver/available-orders}">Доступные заказы</a>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</main>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+<!--</body>-->
+<!--</html>-->
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8">
-  <title>Панель управления</title>
+  <title>Панель управления - Taxi Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary-color: #FFC107;
+      --primary-dark: #e0a800;
+      --secondary-color: #343a40;
+      --client-color: #28a745;
+      --driver-color: #17a2b8;
+      --light-gray: #f8f9fa;
+    }
+
+    body {
+      background-color: #f5f5f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .navbar {
+      background-color: var(--secondary-color) !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 12px 0;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: white !important;
+    }
+
+    .navbar-brand i {
+      color: var(--primary-color);
+      font-size: 1.75rem;
+      margin-right: 10px;
+    }
+
+    .navbar-dark .navbar-nav .nav-link {
+      color: rgba(255,255,255,.8);
+      font-weight: 500;
+      padding: 8px 15px;
+      transition: all 0.3s;
+      border-radius: 5px;
+    }
+
+    .navbar-dark .navbar-nav .nav-link:hover,
+    .navbar-dark .navbar-nav .nav-link.active {
+      color: white;
+      background-color: rgba(255,255,255,.1);
+    }
+
+    .dashboard-header {
+      background: linear-gradient(135deg, var(--secondary-color) 0%, #495057 100%);
+      color: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dashboard-header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 150px;
+      height: 100%;
+      background: rgba(255, 193, 7, 0.1);
+      transform: skewX(-15deg);
+      transform-origin: top right;
+    }
+
+    .dashboard-header h1 {
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .dashboard-header .lead {
+      font-size: 1.25rem;
+      opacity: 0.9;
+    }
+
+    .dashboard-section {
+      background-color: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .dashboard-section:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-section h2 {
+      font-weight: 600;
+      margin-bottom: 20px;
+      position: relative;
+      padding-bottom: 15px;
+    }
+
+    .dashboard-section h2::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background-color: var(--primary-color);
+      border-radius: 5px;
+    }
+
+    .dashboard-section.client h2::after {
+      background-color: var(--client-color);
+    }
+
+    .dashboard-section.driver h2::after {
+      background-color: var(--driver-color);
+    }
+
+    .dashboard-section .icon-border {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background-color: var(--light-gray);
+      border-radius: 50%;
+      margin-bottom: 20px;
+    }
+
+    .dashboard-section .icon-border i {
+      font-size: 1.75rem;
+    }
+
+    .dashboard-section.client .icon-border {
+      color: var(--client-color);
+    }
+
+    .dashboard-section.driver .icon-border {
+      color: var(--driver-color);
+    }
+
+    .stat-card {
+      background-color: var(--light-gray);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 10px 0;
+    }
+
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      color: #212529;
+      font-weight: 600;
+      padding: 10px 20px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+      border-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-client {
+      background-color: var(--client-color);
+      border-color: var(--client-color);
+      color: white;
+    }
+
+    .btn-client:hover {
+      background-color: #218838;
+      border-color: #218838;
+      color: white;
+    }
+
+    .btn-driver {
+      background-color: var(--driver-color);
+      border-color: var(--driver-color);
+      color: white;
+    }
+
+    .btn-driver:hover {
+      background-color: #138496;
+      border-color: #138496;
+      color: white;
+    }
+
+    .quick-action {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      background-color: var(--light-gray);
+      border-radius: 10px;
+      margin-bottom: 15px;
+      text-decoration: none;
+      color: #212529;
+      transition: all 0.3s ease;
+    }
+
+    .quick-action:hover {
+      background-color: #e9ecef;
+      transform: translateX(5px);
+    }
+
+    .quick-action i {
+      font-size: 1.5rem;
+      margin-right: 15px;
+    }
+
+    .quick-action.client i {
+      color: var(--client-color);
+    }
+
+    .quick-action.driver i {
+      color: var(--driver-color);
+    }
+
+    .footer {
+      margin-top: 50px;
+      padding: 20px 0;
+      text-align: center;
+      color: #6c757d;
+      border-top: 1px solid #dee2e6;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-header {
+        padding: 20px;
+      }
+
+      .dashboard-section {
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Taxi Service</a>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-taxi-front"></i> Taxi Service
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarCollapse">
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" th:href="@{/dashboard}">Главная</a>
+          <a class="nav-link active" aria-current="page" th:href="@{/dashboard}">
+            <i class="bi bi-speedometer2 me-1"></i> Главная
+          </a>
         </li>
         <li class="nav-item" sec:authorize="hasRole('ROLE_CLIENT')">
-          <a class="nav-link" th:href="@{/orders}">Мои заказы</a>
+          <a class="nav-link" th:href="@{/orders}">
+            <i class="bi bi-list-check me-1"></i> Мои заказы
+          </a>
+        </li>
+        <li class="nav-item" sec:authorize="hasRole('ROLE_CLIENT')">
+          <a class="nav-link" th:href="@{/map/order}">
+            <i class="bi bi-pin-map me-1"></i> Заказать такси
+          </a>
         </li>
         <li class="nav-item" sec:authorize="hasRole('ROLE_DRIVER')">
-          <a class="nav-link" th:href="@{/cars}">Мои автомобили</a>
+          <a class="nav-link" th:href="@{/cars}">
+            <i class="bi bi-car-front me-1"></i> Мои автомобили
+          </a>
         </li>
         <li class="nav-item" sec:authorize="hasRole('ROLE_DRIVER')">
-          <a class="nav-link" th:href="@{/driver/orders}">Заказы</a>
+          <a class="nav-link" th:href="@{/driver/orders}">
+            <i class="bi bi-clipboard-check me-1"></i> Заказы
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" th:href="@{/profile}">Профиль</a>
+          <a class="nav-link" th:href="@{/profile}">
+            <i class="bi bi-person-circle me-1"></i> Профиль
+          </a>
         </li>
       </ul>
-      <form class="d-flex" th:action="@{/logout}" method="post">
-        <span class="navbar-text me-3" sec:authentication="name"></span>
-        <button class="btn btn-outline-danger" type="submit">Выйти</button>
-      </form>
+      <div class="d-flex align-items-center">
+        <div class="dropdown me-3">
+          <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle me-2"></i>
+            <span sec:authentication="name"></span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" th:href="@{/profile}"><i class="bi bi-person me-2"></i>Мой профиль</a></li>
+            <li><a class="dropdown-item" th:href="@{/settings}"><i class="bi bi-gear me-2"></i>Настройки</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form th:action="@{/logout}" method="post" class="dropdown-item p-0">
+                <button type="submit" class="btn w-100 text-start"><i class="bi bi-box-arrow-right me-2"></i>Выйти</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </nav>
 
-<main class="container">
-  <div class="bg-light p-5 rounded">
-    <h1>Добро пожаловать в систему Taxi Service</h1>
-    <p class="lead">Вы успешно вошли в систему!</p>
+<main class="container py-5">
+  <div class="dashboard-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1>Добро пожаловать в Taxi Service</h1>
+        <p class="lead mb-0">Управляйте вашими заказами и автомобилями в одном месте.</p>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <div class="d-inline-block bg-light text-dark rounded p-3">
+          <span>Сегодня: </span>
+          <span th:text="${#dates.format(#dates.createNow(), 'dd MMMM yyyy')}"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <div sec:authorize="hasRole('ROLE_CLIENT')">
-      <h2>Клиентская панель</h2>
-      <p>Здесь вы можете управлять своими заказами такси.</p>
-      <a class="btn btn-primary" th:href="@{/order/new}">Создать новый заказ</a>
+  <div class="row" sec:authorize="hasRole('ROLE_CLIENT')">
+    <div class="col-md-8">
+      <div class="dashboard-section client">
+        <div class="icon-border">
+          <i class="bi bi-person"></i>
+        </div>
+        <h2>Клиентская панель</h2>
+        <p class="mb-4">Управляйте своими поездками, отслеживайте заказы и бронируйте такси с удобством.</p>
+
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-car-front text-secondary"></i>
+              <div class="stat-value">5</div>
+              <div class="stat-label">Всего поездок</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-clock text-warning"></i>
+              <div class="stat-value">1</div>
+              <div class="stat-label">Активных заказов</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-star-fill text-warning"></i>
+              <div class="stat-value">4.8</div>
+              <div class="stat-label">Средний рейтинг</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <a th:href="@{/map/order}" class="btn btn-lg btn-client">
+            <i class="bi bi-plus-circle me-2"></i>Заказать такси
+          </a>
+          <a th:href="@{/orders}" class="btn btn-lg btn-outline-secondary ms-2">
+            <i class="bi bi-list-check me-2"></i>Мои заказы
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div sec:authorize="hasRole('ROLE_DRIVER')">
-      <h2>Панель водителя</h2>
-      <p>Здесь вы можете управлять своими автомобилями и принимать заказы.</p>
-      <a class="btn btn-primary" th:href="@{/car/new}">Добавить автомобиль</a>
-      <a class="btn btn-success ms-2" th:href="@{/driver/available-orders}">Доступные заказы</a>
+    <div class="col-md-4">
+      <div class="dashboard-section">
+        <h2>Быстрые действия</h2>
+
+        <a th:href="@{/map/order}" class="quick-action client">
+          <i class="bi bi-pin-map"></i>
+          <div>
+            <h5 class="mb-1">Заказать поездку</h5>
+            <p class="mb-0 small text-muted">Указать маршрут и выбрать автомобиль</p>
+          </div>
+        </a>
+
+        <a th:href="@{/orders/active}" class="quick-action client">
+          <i class="bi bi-clock-history"></i>
+          <div>
+            <h5 class="mb-1">Активные заказы</h5>
+            <p class="mb-0 small text-muted">Просмотреть текущие заказы</p>
+          </div>
+        </a>
+
+        <a th:href="@{/profile}" class="quick-action">
+          <i class="bi bi-person-circle"></i>
+          <div>
+            <h5 class="mb-1">Мой профиль</h5>
+            <p class="mb-0 small text-muted">Просмотреть и изменить данные</p>
+          </div>
+        </a>
+
+        <a th:href="@{/settings}" class="quick-action">
+          <i class="bi bi-gear"></i>
+          <div>
+            <h5 class="mb-1">Настройки</h5>
+            <p class="mb-0 small text-muted">Настройки профиля и уведомлений</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" sec:authorize="hasRole('ROLE_DRIVER')">
+    <div class="col-md-8">
+      <div class="dashboard-section driver">
+        <div class="icon-border">
+          <i class="bi bi-car-front"></i>
+        </div>
+        <h2>Панель водителя</h2>
+        <p class="mb-4">Управляйте своими автомобилями, просматривайте и принимайте заказы в режиме реального времени.</p>
+
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-car-front text-info"></i>
+              <div class="stat-value">2</div>
+              <div class="stat-label">Автомобили</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-clipboard-check text-success"></i>
+              <div class="stat-value">15</div>
+              <div class="stat-label">Выполненных заказов</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <i class="bi bi-star-fill text-warning"></i>
+              <div class="stat-value">4.9</div>
+              <div class="stat-label">Рейтинг</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <a th:href="@{/car/new}" class="btn btn-lg btn-driver">
+            <i class="bi bi-plus-circle me-2"></i>Добавить автомобиль
+          </a>
+          <a th:href="@{/driver/available-orders}" class="btn btn-lg btn-outline-secondary ms-2">
+            <i class="bi bi-list-check me-2"></i>Доступные заказы
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="dashboard-section">
+        <h2>Быстрые действия</h2>
+
+        <a th:href="@{/driver/available-orders}" class="quick-action driver">
+          <i class="bi bi-clipboard-check"></i>
+          <div>
+            <h5 class="mb-1">Доступные заказы</h5>
+            <p class="mb-0 small text-muted">Просмотреть и принять заказы</p>
+          </div>
+        </a>
+
+        <a th:href="@{/cars}" class="quick-action driver">
+          <i class="bi bi-car-front"></i>
+          <div>
+            <h5 class="mb-1">Мои автомобили</h5>
+            <p class="mb-0 small text-muted">Управление транспортными средствами</p>
+          </div>
+        </a>
+
+        <a th:href="@{/driver/orders}" class="quick-action driver">
+          <i class="bi bi-clock-history"></i>
+          <div>
+            <h5 class="mb-1">История заказов</h5>
+            <p class="mb-0 small text-muted">Просмотреть выполненные заказы</p>
+          </div>
+        </a>
+
+        <a th:href="@{/profile}" class="quick-action">
+          <i class="bi bi-person-circle"></i>
+          <div>
+            <h5 class="mb-1">Мой профиль</h5>
+            <p class="mb-0 small text-muted">Просмотреть и изменить данные</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="dashboard-section">
+        <h2>Последние новости</h2>
+        <div class="alert alert-info">
+          <h5><i class="bi bi-megaphone me-2"></i>Новое в нашем сервисе!</h5>
+          <p class="mb-0">Мы обновили наше приложение! Теперь вы можете отслеживать поездку в режиме реального времени и оценивать водителей после поездки.</p>
+        </div>
+        <div class="alert alert-warning">
+          <h5><i class="bi bi-exclamation-triangle me-2"></i>Важное обновление</h5>
+          <p class="mb-0">Напоминаем, что с 1 июня 2023 года изменяются тарифы на поездки. Подробности в разделе "Тарифы".</p>
+        </div>
+      </div>
     </div>
   </div>
 </main>
+
+<footer class="footer">
+  <div class="container">
+    <p>&copy; 2023 Taxi Service | Все права защищены</p>
+  </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

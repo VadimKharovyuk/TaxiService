@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Главная - Taxi Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    /* Custom styles */
+    .hero-section {
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/img/taxi-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      padding: 100px 0;
+      margin-bottom: 50px;
+    }
+
+    .feature-box {
+      padding: 30px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+      height: 100%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .feature-box:hover {
+      transform: translateY(-10px);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #FFC107;
+    }
+
+    .download-section {
+      background-color: #f8f9fa;
+      padding: 80px 0;
+      margin: 50px 0;
+    }
+
+    .app-badge {
+      height: 50px;
+      margin: 10px;
+    }
+
+    .testimonial {
+      padding: 30px;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .footer {
+      background-color: #343a40;
+      color: white;
+      padding: 50px 0 20px;
+    }
+
+    .footer a {
+      color: #FFC107;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .social-icon {
+      font-size: 1.5rem;
+      margin-right: 15px;
+      color: white;
+    }
+
+    .social-icon:hover {
+      color: #FFC107;
+    }
+
+    .btn-primary {
+      background-color: #FFC107;
+      border-color: #FFC107;
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background-color: #e0a800;
+      border-color: #e0a800;
+      color: #000;
+    }
+
+    .navbar {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-taxi-front" style="color: #FFC107;"></i> Taxi Service
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link active" th:href="@{/}">Главная</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/services}">Услуги</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/about}">О нас</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/contact}">Контакты</a>
+        </li>
+      </ul>
+      <div class="d-flex" sec:authorize="!isAuthenticated()">
+        <a th:href="@{/login}" class="btn btn-outline-light me-2">Войти</a>
+        <a th:href="@{/register}" class="btn btn-warning">Регистрация</a>
+      </div>
+      <div class="dropdown" sec:authorize="isAuthenticated()">
+        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" th:href="@{/dashboard}">Личный кабинет</a></li>
+          <li><a class="dropdown-item" th:href="@{/orders}">Мои заказы</a></li>
+          <li><a class="dropdown-item" th:href="@{/profile}">Профиль</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <form th:action="@{/logout}" method="post">
+              <button class="dropdown-item" type="submit">Выйти</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section text-center">
+  <div class="container">
+    <h1 class="display-4 fw-bold mb-4">Быстрая и комфортная поездка в любое время</h1>
+    <p class="lead mb-5">Заказывайте такси онлайн всего в несколько кликов. Широкий выбор автомобилей для любых потребностей.</p>
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+      <a th:href="@{/map/order}" class="btn btn-primary btn-lg px-4 gap-3">Заказать такси</a>
+      <a th:href="@{/services}" class="btn btn-outline-light btn-lg px-4">Узнать больше</a>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="container mb-5">
+  <h2 class="text-center mb-5">Почему выбирают нас</h2>
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-clock feature-icon"></i>
+        <h3>Быстрая подача</h3>
+        <p>Автомобиль приедет в течение 5-10 минут после заказа. Всегда вовремя, даже в часы пик.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-shield-check feature-icon"></i>
+        <h3>Безопасность</h3>
+        <p>Все водители проходят строгую проверку. Автомобили регулярно проходят технический осмотр.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-cash-coin feature-icon"></i>
+        <h3>Прозрачные цены</h3>
+        <p>Никаких скрытых платежей. Стоимость поездки рассчитывается заранее и остается неизменной.</p>
+      </div>
+    </div>
+  </div>
+  <div class="row g-4 mt-2">
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-star feature-icon"></i>
+        <h3>Комфорт</h3>
+        <p>Выбирайте класс автомобиля в зависимости от ваших потребностей. От эконом до премиум класса.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-phone feature-icon"></i>
+        <h3>Удобное приложение</h3>
+        <p>Заказывайте такси, отслеживайте поездку и управляйте своими заказами через удобное приложение.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="feature-box bg-white">
+        <i class="bi bi-headset feature-icon"></i>
+        <h3>Поддержка 24/7</h3>
+        <p>Наша служба поддержки работает круглосуточно. Мы всегда готовы помочь вам в любой ситуации.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="container mb-5">
+  <h2 class="text-center mb-5">Как это работает</h2>
+  <div class="row">
+    <div class="col-lg-3 col-md-6 text-center mb-4">
+      <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 100px; height: 100px;">
+        <i class="bi bi-phone-fill text-dark" style="font-size: 40px;"></i>
+      </div>
+      <h4>1. Заказ</h4>
+      <p>Укажите адрес отправления и назначения через наше приложение или веб-сайт</p>
+    </div>
+    <div class="col-lg-3 col-md-6 text-center mb-4">
+      <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 100px; height: 100px;">
+        <i class="bi bi-car-front-fill text-dark" style="font-size: 40px;"></i>
+      </div>
+      <h4>2. Подтверждение</h4>
+      <p>Система автоматически подберет ближайшего водителя и сообщит время прибытия</p>
+    </div>
+    <div class="col-lg-3 col-md-6 text-center mb-4">
+      <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 100px; height: 100px;">
+        <i class="bi bi-geo-alt-fill text-dark" style="font-size: 40px;"></i>
+      </div>
+      <h4>3. Поездка</h4>
+      <p>Отслеживайте маршрут в реальном времени и наслаждайтесь комфортной поездкой</p>
+    </div>
+    <div class="col-lg-3 col-md-6 text-center mb-4">
+      <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 100px; height: 100px;">
+        <i class="bi bi-star-fill text-dark" style="font-size: 40px;"></i>
+      </div>
+      <h4>4. Оценка</h4>
+      <p>После поездки вы можете оценить водителя и качество сервиса</p>
+    </div>
+  </div>
+  <div class="text-center mt-4">
+    <a th:href="@{/map/order}" class="btn btn-primary btn-lg">Заказать такси сейчас</a>
+  </div>
+</section>
+
+<!-- Taxi Classes Section -->
+<section class="container mb-5">
+  <h2 class="text-center mb-5">Классы автомобилей</h2>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="/img/standard-car.jpg" class="card-img-top" alt="Стандарт">
+        <div class="card-body">
+          <h5 class="card-title">Стандарт</h5>
+          <p class="card-text">Комфортные автомобили для ежедневных поездок по городу. Оптимальное соотношение цены и качества.</p>
+          <ul class="list-unstyled">
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Вместимость: до 4 пассажиров</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Кондиционер</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Время подачи: 5-10 минут</li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <p class="text-muted">От 20₽/км + 100₽ базовый тариф</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="/img/business-car.jpg" class="card-img-top" alt="Бизнес">
+        <div class="card-body">
+          <h5 class="card-title">Бизнес</h5>
+          <p class="card-text">Автомобили повышенного комфорта для деловых встреч и важных мероприятий.</p>
+          <ul class="list-unstyled">
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Вместимость: до 4 пассажиров</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Климат-контроль</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Время подачи: 7-15 минут</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Бесплатная вода</li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <p class="text-muted">От 30₽/км + 200₽ базовый тариф</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <img src="/img/luxury-car.jpg" class="card-img-top" alt="Люкс">
+        <div class="card-body">
+          <h5 class="card-title">Люкс</h5>
+          <p class="card-text">Премиальные автомобили для особых случаев. Высочайший уровень комфорта и сервиса.</p>
+          <ul class="list-unstyled">
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Вместимость: до 4 пассажиров</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Климат-контроль</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Время подачи: 10-20 минут</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Бесплатная вода и закуски</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Wi-Fi в салоне</li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <p class="text-muted">От 50₽/км + 300₽ базовый тариф</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Download App Section -->
+<section class="download-section">
+  <div class="container text-center">
+    <h2 class="mb-4">Скачайте наше приложение</h2>
+    <p class="lead mb-5">Получите все преимущества нашего сервиса на вашем смартфоне</p>
+    <div>
+      <a href="#" class="d-inline-block">
+        <img src="/img/app-store-badge.png" alt="Download on App Store" class="app-badge">
+      </a>
+      <a href="#" class="d-inline-block">
+        <img src="/img/google-play-badge.png" alt="Get it on Google Play" class="app-badge">
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="container mb-5">
+  <h2 class="text-center mb-5">Что говорят наши клиенты</h2>
+  <div class="row">
+    <div class="col-md-4">
+      <div class="testimonial bg-light">
+        <div class="mb-3">
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+        </div>
+        <p class="fst-italic">"Отличный сервис! Водитель приехал за 5 минут, машина была чистая и комфортная. Буду пользоваться снова!"</p>
+        <div class="d-flex align-items-center">
+          <img src="/img/testimonial-1.jpg" class="rounded-circle me-3" width="50" height="50" alt="Анна">
+          <div>
+            <h6 class="mb-0">Анна В.</h6>
+            <small class="text-muted">Москва</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="testimonial bg-light">
+        <div class="mb-3">
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star text-warning"></i>
+        </div>
+        <p class="fst-italic">"Пользуюсь этим сервисом уже несколько месяцев. Цены адекватные, водители вежливые. Рекомендую!"</p>
+        <div class="d-flex align-items-center">
+          <img src="/img/testimonial-2.jpg" class="rounded-circle me-3" width="50" height="50" alt="Максим">
+          <div>
+            <h6 class="mb-0">Максим Д.</h6>
+            <small class="text-muted">Санкт-Петербург</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="testimonial bg-light">
+        <div class="mb-3">
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-fill text-warning"></i>
+          <i class="bi bi-star-half text-warning"></i>
+        </div>
+        <p class="fst-italic">"Очень удобное приложение, можно видеть, где находится машина в реальном времени. Все водители профессионалы своего дела."</p>
+        <div class="d-flex align-items-center">
+          <img src="/img/testimonial-3.jpg" class="rounded-circle me-3" width="50" height="50" alt="Ольга">
+          <div>
+            <h6 class="mb-0">Ольга С.</h6>
+            <small class="text-muted">Казань</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="container mb-5">
+  <h2 class="text-center mb-5">Часто задаваемые вопросы</h2>
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingOne">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+              Как заказать такси?
+            </button>
+          </h2>
+          <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Заказать такси очень просто! Вы можете воспользоваться нашим веб-сайтом или мобильным приложением. Укажите адрес отправления и назначения, выберите класс автомобиля и нажмите кнопку "Заказать".
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingTwo">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+              Как рассчитывается стоимость поездки?
+            </button>
+          </h2>
+          <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Стоимость поездки рассчитывается на основе нескольких факторов: выбранный класс автомобиля, расстояние поездки, время в пути и текущий спрос. Базовая формула: базовый тариф + (стоимость за км × расстояние).
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingThree">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+              Можно ли заказать такси на определенное время?
+            </button>
+          </h2>
+          <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Да, вы можете заказать такси заранее, выбрав опцию "Предварительный заказ" и указав нужную дату и время. Мы гарантируем, что автомобиль будет подан вовремя.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingFour">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+              Что делать, если я забыл вещи в такси?
+            </button>
+          </h2>
+          <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Если вы забыли вещи в такси, свяжитесь с нашей службой поддержки как можно скорее. Сообщите номер заказа и описание предмета. Мы свяжемся с водителем и поможем вам вернуть забытые вещи.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingFive">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+              Могу ли я заказать такси с детским креслом?
+            </button>
+          </h2>
+          <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">
+              Да, при заказе такси вы можете выбрать дополнительную опцию "Детское кресло". Укажите возраст ребенка, чтобы мы подобрали подходящее кресло. Обратите внимание, что это может немного увеличить время ожидания.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="container-fluid bg-dark text-white py-5 text-center mb-5">
+  <div class="container">
+    <h2 class="mb-4">Готовы к поездке?</h2>
+    <p class="lead mb-4">Зарегистрируйтесь сейчас и получите скидку 20% на первую поездку!</p>
+    <a th:href="@{/register}" class="btn btn-warning btn-lg">Зарегистрироваться</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-4 mb-4 mb-lg-0">
+        <h5 class="text-uppercase mb-4">О компании</h5>
+        <p>Taxi Service — современный сервис заказа такси, работающий с 2020 года. Мы стремимся сделать поездки на такси доступными, безопасными и комфортными для каждого клиента.</p>
+        <div class="mt-4">
+          <a href="#" class="social-icon"><i class="bi bi-facebook"></i></a>
+          <a href="#" class="social-icon"><i class="bi bi-twitter"></i></a>
+          <a href="#" class="social-icon"><i class="bi bi-instagram"></i></a>
+          <a href="#" class="social-icon"><i class="bi bi-linkedin"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+        <h5 class="text-uppercase mb-4">Навигация</h5>
+        <ul class="list-unstyled">
+          <li class="mb-2"><a href="#">Главная</a></li>
+          <li class="mb-2"><a href="#">Услуги</a></li>
+          <li class="mb-2"><a href="#">Тарифы</a></li>
+          <li class="mb-2"><a href="#">О нас</a></li>
+          <li class="mb-2"><a href="#">Блог</a></li>
+          <li class="mb-2"><a href="#">Контакты</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+        <h5 class="text-uppercase mb-4">Услуги</h5>
+        <ul class="list-unstyled">
+          <li class="mb-2"><a href="#">Стандарт такси</a></li>
+          <li class="mb-2"><a href="#">Бизнес класс</a></li>
+          <li class="mb-2"><a href="#">Люкс такси</a></li>
+          <li class="mb-2"><a href="#">Трансфер в аэропорт</a></li>
+          <li class="mb-2"><a href="#">Междугородние поездки</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-4 col-md-12">
+        <h5 class="text-uppercase mb-4">Контакты</h5>
+        <p><i class="bi bi-geo-alt me-2"></i> Пресненская наб., 10, Москва, 123317</p>
+        <p><i class="bi bi-telephone me-2"></i> +7 (495) 123-45-67</p>
+        <p><i class="bi bi-envelope me-2"></i> info@taxiservice.ru</p>
+        <p><i class="bi bi-clock me-2"></i> Работаем круглосуточно</p>
+        <form class="mt-4">
+          <h6>Подпишитесь на нашу рассылку</h6>
+          <div class="input-group mb-3">
+            <input type="email" class="form-control" placeholder="Ваш email" aria-label="Email">
+            <button class="btn btn-warning" type="submit">Подписаться</button>
+          </div>
+          <small class="text-muted">Мы не рассылаем спам, только информация о скидках и акциях</small>
+        </form>
+      </div>
+    </div>
+    <hr class="my-4">
+    <div class="row align-items-center">
+      <div class="col-md-7 col-lg-8">
+        <p>© 2023 Taxi Service. Все права защищены.</p>
+      </div>
+      <div class="col-md-5 col-lg-4">
+        <ul class="list-inline mb-0 text-md-end">
+          <li class="list-inline-item"><a href="#">Политика конфиденциальности</a></li>
+          <li class="list-inline-item">·</li>
+          <li class="list-inline-item"><a href="#">Условия использования</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
