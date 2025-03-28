@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Заказы автомобиля</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    /* Добавьте здесь стили, согласующиеся с дизайном остальных страниц */
+    body {
+      background-color: #f5f5f5;
+    }
+
+    .car-header {
+      background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+      color: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+      background-color: #FFC107;
+      border-color: #FFC107;
+      color: #212529;
+    }
+
+    .btn-primary:hover {
+      background-color: #e0a800;
+      border-color: #e0a800;
+    }
+
+    .table-container {
+      background-color: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .badge-accepted {
+      background-color: #FFC107;
+      color: #212529;
+    }
+
+    .badge-driver-assigned {
+      background-color: #17a2b8;
+    }
+
+    .badge-in-progress {
+      background-color: #007bff;
+    }
+
+    .badge-completed {
+      background-color: #28a745;
+    }
+
+    .badge-canceled {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-taxi-front" style="color: #FFC107;"></i> Taxi Service
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/dashboard}">
+            <i class="bi bi-speedometer2"></i> Главная
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" th:href="@{/cars}">
+            <i class="bi bi-car-front"></i> Мои автомобили
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/driver/orders}">
+            <i class="bi bi-clipboard-check"></i> Заказы
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" th:href="@{/profile}">
+            <i class="bi bi-person-circle"></i> Профиль
+          </a>
+        </li>
+      </ul>
+      <form class="d-flex" th:action="@{/logout}" method="post">
+        <span class="navbar-text me-3" sec:authentication="name"></span>
+        <button class="btn btn-outline-danger" type="submit">Выйти</button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="car-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1>
+          <i class="bi bi-car-front me-2"></i>
+          <span th:text="${car.brandName + ' ' + car.model}"></span>
+        </h1>
+        <p class="lead mb-0">
+          <span th:text="${'Номер: ' + car.licensePlate}"></span>
+          <span th:if="${car.color}" th:text="${', Цвет: ' + car.color}"></span>
+        </p>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <a th:href="@{/cars}" class="btn btn-light">
+          <i class="bi bi-arrow-left me-2"></i>К списку автомобилей
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#active">
+        <i class="bi bi-clock me-1"></i> Активные заказы
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#completed">
+        <i class="bi bi-check-circle me-1"></i> Завершенные заказы
+      </a>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <div id="active" class="tab-pane fade show active">
+      <div th:if="${#lists.isEmpty(activeOrders)}" class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i> У этого автомобиля нет активных заказов.
+      </div>
+
+      <div th:unless="${#lists.isEmpty(activeOrders)}" class="table-container">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Клиент</th>
+              <th>Статус</th>
+              <th>Создан</th>
+              <th>Маршрут</th>
+              <th>Расстояние</th>
+              <th>Цена</th>
+              <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="order : ${activeOrders}">
+              <td th:text="${order.id}"></td>
+              <td th:text="${order.client != null ? order.client.name : '-'}"></td>
+              <td>
+                                    <span th:class="${'badge ' +
+                                        (order.status.name() == 'ACCEPTED' ? 'badge-accepted' :
+                                         order.status.name() == 'DRIVER_ASSIGNED' ? 'badge-driver-assigned' :
+                                         order.status.name() == 'IN_PROGRESS' ? 'badge-in-progress' : 'bg-secondary')}"
+                                          th:text="${order.status.displayName}"></span>
+              </td>
+              <td th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+              <td>
+                <span title="Координаты отправления" th:text="${#numbers.formatDecimal(order.pickupLatitude, 1, 6) + ', ' + #numbers.formatDecimal(order.pickupLongitude, 1, 6)}"></span>
+                <i class="bi bi-arrow-right mx-1"></i>
+                <span title="Координаты назначения" th:text="${#numbers.formatDecimal(order.dropoffLatitude, 1, 6) + ', ' + #numbers.formatDecimal(order.dropoffLongitude, 1, 6)}"></span>
+              </td>
+              <td th:text="${order.distance != null ? #numbers.formatDecimal(order.distance, 1, 2) + ' км' : '-'}"></td>
+              <td th:text="${order.price != null ? order.price + ' ₽' : '-'}"></td>
+              <td>
+                <a th:href="@{/cars/{carId}/orders/{orderId}(carId=${car.id}, orderId=${order.id})}" class="btn btn-sm btn-primary">
+                  <i class="bi bi-info-circle"></i> Детали
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="completed" class="tab-pane fade">
+      <div th:if="${#lists.isEmpty(completedOrders)}" class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i> У этого автомобиля нет завершенных заказов.
+      </div>
+
+      <div th:unless="${#lists.isEmpty(completedOrders)}" class="table-container">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Клиент</th>
+              <th>Статус</th>
+              <th>Создан</th>
+              <th>Завершен</th>
+              <th>Расстояние</th>
+              <th>Цена</th>
+              <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="order : ${completedOrders}">
+              <td th:text="${order.id}"></td>
+              <td th:text="${order.client != null ? order.client.name : '-'}"></td>
+              <td>
+                                    <span th:class="${'badge ' +
+                                        (order.status.name() == 'COMPLETED' ? 'badge-completed' : 'badge-canceled')}"
+                                          th:text="${order.status.displayName}"></span>
+              </td>
+              <td th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+              <td th:text="${order.completedAt != null ? #temporals.format(order.completedAt, 'dd.MM.yyyy HH:mm') : '-'}"></td>
+              <td th:text="${order.distance != null ? #numbers.formatDecimal(order.distance, 1, 2) + ' км' : '-'}"></td>
+              <td th:text="${order.price != null ? order.price + ' ₽' : '-'}"></td>
+              <td>
+                <a th:href="@{/cars/{carId}/orders/{orderId}(carId=${car.id}, orderId=${order.id})}" class="btn btn-sm btn-primary">
+                  <i class="bi bi-info-circle"></i> Детали
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

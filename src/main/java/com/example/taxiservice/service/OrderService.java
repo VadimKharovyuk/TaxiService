@@ -282,6 +282,7 @@ public class OrderService {
     private final CarRepository carRepository;
     private final UserService userService;
     private final OrderMapper orderMapper;
+    private final CarService carService;
 
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
@@ -373,4 +374,34 @@ public class OrderService {
     public Order findById(Long id) {
         return orderRepository.findById(id).orElse(null);
     }
+
+    /**
+     * Находит все заказы для конкретного автомобиля
+     */
+    public List<Order> findByCarId(Long carId) {
+        Car car = carService.findEntityById(carId);
+        return orderRepository.findByCarId(carId);
+    }
+
+    /**
+     * Находит активные заказы для конкретного автомобиля
+     */
+    public List<Order> findActiveByCarId(Long carId) {
+        return orderRepository.findByCarIdAndStatusIn(
+                carId,
+                Arrays.asList(OrderStatus.ACCEPTED, OrderStatus.DRIVER_ASSIGNED, OrderStatus.IN_PROGRESS)
+        );
+    }
+
+    /**
+     * Находит завершенные заказы для конкретного автомобиля
+     */
+    public List<Order> findCompletedByCarId(Long carId) {
+        return orderRepository.findByCarIdAndStatusIn(
+                carId,
+                Arrays.asList(OrderStatus.COMPLETED, OrderStatus.CANCELED)
+        );
+    }
+
+
 }
